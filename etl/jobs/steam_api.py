@@ -1,18 +1,14 @@
+from jobs import endpoints as urls
 import logging
 import time
 import requests
 
 logger = logging.getLogger(__name__)
 
-STEAM_APPLIST_URL = "https://api.steampowered.com/IStoreService/GetAppList/v1/"
-STORE_APPDETAILS_URL = "https://store.steampowered.com/api/appdetails"
 
 
 def get_app_list(api_key, max_results=100):
-    """
-    Fetches the full list of AppIDs from Steam.
-    Now requires an API key (ISteamApps/GetAppList/v2 was deprecated).
-    """
+    """ Fetches the full list of AppIDs from Steam. """
     params = {
         "key": api_key,
         "max_results": max_results,
@@ -22,15 +18,25 @@ def get_app_list(api_key, max_results=100):
         "include_videos": False,
         "include_hardware": False,
     }
-    response = requests.get(STEAM_APPLIST_URL, params=params, timeout=15)
+    response = requests.get(urls.APPLIST, params=params, timeout=15)
     response.raise_for_status()
     return response.json()["response"]["apps"]
 
+def get_tag_list(api_key, max_results=100):
+    """ Fetches the most popular tags from Steam store. """
+    params = {
+        "key": api_key,
+        "language": "english"
+    }
+    response = requests.get(urls.MOSTPOPULARTAGS, params=params, timeout=15)
+    response.raise_for_status()
+    return response.json()["response"]["tags"]
+
 
 def get_app_details(app_id):
-    """Fetches metadata for a specific game (price, genre, etc)."""
+    """ Fetches metadata for a specific game. """
     params = {"appids": app_id, "cc": "mx", "l": "english"}
-    response = requests.get(STORE_APPDETAILS_URL, params=params, timeout=15)
+    response = requests.get(urls.APPDETAILS, params=params, timeout=15)
     response.raise_for_status()
     data = response.json()
 
