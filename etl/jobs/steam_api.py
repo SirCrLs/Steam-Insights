@@ -99,6 +99,61 @@ def get_steam_level_distribution(api_key: str, level: int):
 
 # User Functions
 
+def get_owned_games(api_key: str, steam_id: int):
+    """ Fetches the list of games owned by a specific user. """
+    params = {
+        "steamid": steam_id,
+        "include_appinfo": False,
+        "include_played_free_games": True,
+        "appids_filter": None,
+        "include_free_sub": False,
+        "language": "english",
+        "include_extended_appinfo": False
+    }
+    return _make_request(urls.U_OWNED_GAMES, api_key, params)
+
+def get_recently_played_games(api_key: str, steam_id: int):
+    """ Fetches the list of games recently played by a specific user. """
+    params = {
+        "steamid": steam_id,
+        "count": 0,
+    }
+    return _make_request(urls.U_RECENTLY_PLAYED, api_key, params)
+
+def get_steam_level(api_key: str, steam_id: int):
+    """ Fetches the Steam level of a specific user. """
+    params = {
+        "steamid": steam_id,
+    }
+    return _make_request(urls.U_STEAM_LEVEL, api_key, params)
+
+def get_top_achievements(api_key: str, steam_id: int, app_id: int):
+    """ Fetches the top achievements for a specific user. """
+    params = {
+        "key": api_key,
+        "steamid": steam_id,
+        "max_achievements": 5,
+        "appids[0]" : app_id
+    }
+    response = requests.get(urls.U_TOP_ACHIEVEMENTS, params=params, timeout=15)
+    response.raise_for_status()
+    return response.json()
+
+def get_player_summaries(api_key: str, steam_ids: list):
+    """ Fetches summaries for a list of users. """
+    steamids_str = ",".join(map(str, steam_ids))
+
+    params = {
+        "key": api_key,
+        "steamids": steam_ids
+    }
+
+    response = requests.get(urls.U_PLAYER_SUMMARY, params=params)
+    response.raise_for_status()
+    return response.json()
+
+
+
 def run(conn, load, transform, api_key, max_games=None):
     logger.info("Fetching full Steam app list...")
     apps = get_app_list(api_key)

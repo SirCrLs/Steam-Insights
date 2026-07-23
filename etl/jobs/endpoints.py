@@ -24,8 +24,8 @@ U_STATS_FOR_GAME = f"{BASE_URL}/ISteamUserStats/GetUserStatsForGame/v2/"
 # IPlayerService
 U_OWNED_GAMES = f"{BASE_URL}/IPlayerService/GetOwnedGames/v1/"
 U_RECENTLY_PLAYED = f"{BASE_URL}/IPlayerService/GetRecentlyPlayedGames/v1/"
-U_GAME_PLAYTIME = f"{BASE_URL}/IPlayerService/GetSingleGamePlaytime/v1/"
 U_STEAM_LEVEL = f"{BASE_URL}/IPlayerService/GetSteamLevel/v1/"
+U_TOP_ACHIEVEMENTS = f"{BASE_URL}/IPlayerService/GetTopAchievementsForGames/v1/"
 STEAM_LEVEL_DIST = f"{BASE_URL}/IPlayerService/GetSteamLevelDistribution/v1/"
 
 # ISteamUser
