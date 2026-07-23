@@ -2,15 +2,44 @@ from jobs import endpoints as urls
 import logging
 import time
 import requests
+import json
 
 logger = logging.getLogger(__name__)
 
 
+def _make_request(url: str, api_key: str, input_params: Optional[dict] = None):
+    """Internal function to perform HTTP GET requests."""
+    params = {"key": api_key}
 
-def get_app_list(api_key, max_results=100):
+    # if endpoint requires input_json
+    if input_params is not None:
+        params["input_json"] = json.dumps(input_params)
+
+    try:
+        response = requests.get(url, params=params, timeout=15)
+        response.raise_for_status()
+        return response.json()
+    except requests.exceptions.RequestException as e:
+        print(f"Error on {url}: {e}")
+        return {}
+
+# Functions to fetch data from Steam API endpoints
+
+def get_app_details(app_id):
+    """ Fetches metadata for a specific game. """
+    params = {
+        "appids": app_id, 
+        "cc": "mx", 
+        "l": "english"
+        }
+    #This endpoint does not require an API key so I wont call the _make_request function here
+    response = requests.get(urls.APP_DETAILS, params=params, timeout=15)
+    response.raise_for_status()
+    return response.json()
+
+def get_app_list(api_key: str, max_results: int = 200):
     """ Fetches the full list of AppIDs from Steam. """
     params = {
-        "key": api_key,
         "max_results": max_results,
         "include_games": True,
         "include_dlc": False,
@@ -18,34 +47,34 @@ def get_app_list(api_key, max_results=100):
         "include_videos": False,
         "include_hardware": False,
     }
-    response = requests.get(urls.APPLIST, params=params, timeout=15)
-    response.raise_for_status()
-    return response.json()["response"]["apps"]
 
-def get_tag_list(api_key, max_results=100):
+    return _make_request(urls.APP_LIST, api_key, params)
+
+
+def get_tag_list(api_key: str):
     """ Fetches the most popular tags from Steam store. """
     params = {
-        "key": api_key,
         "language": "english"
     }
-    response = requests.get(urls.MOSTPOPULARTAGS, params=params, timeout=15)
-    response.raise_for_status()
-    return response.json()["response"]["tags"]
+    return _make_request(urls.POPULAR_TAGS, api_key, params)
+
+def get_games_by_current_players(api_key: str):
+    """ Fetches games by current players from Steam charts. """
+    return _make_request(urls.GAMES_BY_CURRENT_PLAYERS, api_key)
 
 
-def get_app_details(app_id):
-    """ Fetches metadata for a specific game. """
-    params = {"appids": app_id, "cc": "mx", "l": "english"}
-    response = requests.get(urls.APPDETAILS, params=params, timeout=15)
-    response.raise_for_status()
-    data = response.json()
+def get_most_played_games(api_key: str):
+    """ Fetches the most played games from Steam charts. """
+    return _make_request(urls.MOST_PLAYED_GAMES, api_key)
 
-    app_data = data.get(str(app_id))
-    if not app_data or not app_data.get("success"):
-        return None
 
-    return app_data["data"]
+def get_top_releases_pages(api_key: str):
+    """ Fetches the top releases pages from Steam charts. """
+    return _make_request(urls.TOP_RELEASES_PAGES, api_key)
 
+
+
+# User Functions
 
 def run(conn, load, transform, api_key, max_games=None):
     logger.info("Fetching full Steam app list...")
