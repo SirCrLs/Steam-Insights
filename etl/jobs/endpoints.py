@@ -1,9 +1,8 @@
 BASE_URL = "https://api.steampowered.com"
-APPDETAILS = "https://store.steampowered.com/api/appdetails"
+APP_DETAILS = "https://store.steampowered.com/api/appdetails"
 
 # IStoreService
 APP_LIST = f"{BASE_URL}/IStoreService/GetAppList/v1/"
-APP_INFO = f"{BASE_URL}/IStoreService/GetAppInfo/v1/"
 U_DISCOVERY_QUEUE = f"{BASE_URL}/IStoreService/GetDiscoveryQueue/v1/"
 U_GAMES_FOLLOWED = f"{BASE_URL}/IStoreService/GetGamesFollowed/v1/"
 U_RECOMENDED_TAGS = f"{BASE_URL}/IStoreService/GetRecommendedTagsForUser/v1/"
@@ -13,13 +12,9 @@ U_GAME_INTEREST = f"{BASE_URL}/IStoreService/GetUserGameInterestState/v1/"
 
 
 # ISteamChartsService
-BEST_OF_YEAR_PAGES = f"{BASE_URL}/ISteamChartsService/GetBestOfYearPages/v1/"
 GAMES_BY_CURRENT_PLAYERS = f"{BASE_URL}/ISteamChartsService/GetGamesByConcurrentPlayers/v1/"
-MONTH_TOP_APP = f"{BASE_URL}/ISteamChartsService/GetMonthTopAppReleases/v1/"
 MOST_PLAYED_GAMES = f"{BASE_URL}/ISteamChartsService/GetMostPlayedGames/v1/"
-MOST_PLAYED_DECKGAMES = f"{BASE_URL}/ISteamChartsService/GetMostPlayedSteamDeckGames/v1/"
 TOP_RELEASES_PAGES = f"{BASE_URL}/ISteamChartsService/GetTopReleasesPages/v1/"
-YEAR_TOP_RELEASES = f"{BASE_URL}/ISteamChartsService/GetYearTopAppReleases/v1/"
 
 # ISteamUserStats 
 GLOBAL_ACHIEVEMENT_PERC = f"{BASE_URL}/ISteamUserStats/GetGlobalAchievementPercentagesForApp/v2/"
