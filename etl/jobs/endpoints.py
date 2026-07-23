@@ -3,13 +3,8 @@ APP_DETAILS = "https://store.steampowered.com/api/appdetails"
 
 # IStoreService
 APP_LIST = f"{BASE_URL}/IStoreService/GetAppList/v1/"
-U_DISCOVERY_QUEUE = f"{BASE_URL}/IStoreService/GetDiscoveryQueue/v1/"
 U_GAMES_FOLLOWED = f"{BASE_URL}/IStoreService/GetGamesFollowed/v1/"
-U_RECOMENDED_TAGS = f"{BASE_URL}/IStoreService/GetRecommendedTagsForUser/v1/"
-U_STORE_PREFERENCES = f"{BASE_URL}/IStoreService/GetStorePreferences/v1/"
 POPULAR_TAGS = f"{BASE_URL}/IStoreService/GetMostPopularTags/v1/"
-U_GAME_INTEREST = f"{BASE_URL}/IStoreService/GetUserGameInterestState/v1/"
-
 
 # ISteamChartsService
 GAMES_BY_CURRENT_PLAYERS = f"{BASE_URL}/ISteamChartsService/GetGamesByConcurrentPlayers/v1/"
@@ -18,7 +13,6 @@ MOST_PLAYED_GAMES = f"{BASE_URL}/ISteamChartsService/GetMostPlayedGames/v1/"
 # ISteamUserStats 
 GLOBAL_ACHIEVEMENT_PERC = f"{BASE_URL}/ISteamUserStats/GetGlobalAchievementPercentagesForApp/v2/"
 CURRENT_PLAYERS = f"{BASE_URL}/ISteamUserStats/GetNumberOfCurrentPlayers/v1/"
-U_PLAYER_ACHIEVEMENTS = f"{BASE_URL}/ISteamUserStats/GetPlayerAchievements/v1/"
 U_STATS_FOR_GAME = f"{BASE_URL}/ISteamUserStats/GetUserStatsForGame/v2/"
 
 # IPlayerService

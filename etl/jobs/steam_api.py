@@ -54,7 +54,7 @@ def get_app_list(api_key: str, max_results: int = 200):
     return _make_request(urls.APP_LIST, api_key, params)
 
 
-def get_tag_list(api_key: str):
+def get_popular_tags(api_key: str):
     """ Fetches the most popular tags from Steam store. """
     params = {
         "language": "english"
@@ -145,13 +145,32 @@ def get_player_summaries(api_key: str, steam_ids: list):
 
     params = {
         "key": api_key,
-        "steamids": steam_ids
+        "steamids": steamids_str
     }
 
     response = requests.get(urls.U_PLAYER_SUMMARY, params=params)
     response.raise_for_status()
     return response.json()
 
+def get_games_followed(steam_id: int):
+    """ Fetches the list of games followed by a specific user. """
+    params = {
+        "steamid": steam_id,
+    }
+    response = requests.get(urls.U_GAMES_FOLLOWED, params=params, timeout=15)
+    response.raise_for_status()
+    return response.json()
+
+def get_user_stats_for_game(api_key: str, steam_id: int, app_id: int):
+    """ Fetches user stats for a specific game. """
+    params = {
+        "key": api_key,
+        "steamid": steam_id,
+        "appid": app_id
+    }
+    response = requests.get(urls.U_STATS_FOR_GAME, params=params, timeout=15)
+    response.raise_for_status()
+    return response.json()
 
 
 def run(conn, load, transform, api_key, max_games=None):
