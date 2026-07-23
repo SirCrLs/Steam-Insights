@@ -14,18 +14,14 @@ U_GAME_INTEREST = f"{BASE_URL}/IStoreService/GetUserGameInterestState/v1/"
 # ISteamChartsService
 GAMES_BY_CURRENT_PLAYERS = f"{BASE_URL}/ISteamChartsService/GetGamesByConcurrentPlayers/v1/"
 MOST_PLAYED_GAMES = f"{BASE_URL}/ISteamChartsService/GetMostPlayedGames/v1/"
-TOP_RELEASES_PAGES = f"{BASE_URL}/ISteamChartsService/GetTopReleasesPages/v1/"
 
 # ISteamUserStats 
 GLOBAL_ACHIEVEMENT_PERC = f"{BASE_URL}/ISteamUserStats/GetGlobalAchievementPercentagesForApp/v2/"
-GLOBAL_STATS_FOR_GAME = f"{BASE_URL}/ISteamUserStats/GetGlobalStatsForGame/v1/"
 CURRENT_PLAYERS = f"{BASE_URL}/ISteamUserStats/GetNumberOfCurrentPlayers/v1/"
 U_PLAYER_ACHIEVEMENTS = f"{BASE_URL}/ISteamUserStats/GetPlayerAchievements/v1/"
-SCHEMA_FOR_GAME = f"{BASE_URL}/ISteamUserStats/GetSchemaForGame/v2/"
 U_STATS_FOR_GAME = f"{BASE_URL}/ISteamUserStats/GetUserStatsForGame/v2/"
 
 # IPlayerService
-GAME_ACHIEVEMENTS = f"{BASE_URL}/IPlayerService/GetGameAchievements/v1/"
 U_OWNED_GAMES = f"{BASE_URL}/IPlayerService/GetOwnedGames/v1/"
 U_RECENTLY_PLAYED = f"{BASE_URL}/IPlayerService/GetRecentlyPlayedGames/v1/"
 U_GAME_PLAYTIME = f"{BASE_URL}/IPlayerService/GetSingleGamePlaytime/v1/"

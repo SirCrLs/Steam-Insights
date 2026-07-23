@@ -7,9 +7,12 @@ import json
 logger = logging.getLogger(__name__)
 
 
-def _make_request(url: str, api_key: str, input_params: Optional[dict] = None):
+def _make_request(url: str, api_key: str = None, input_params: Optional[dict] = None):
     """Internal function to perform HTTP GET requests."""
-    params = {"key": api_key}
+    if api_key is not None:
+        params = {"key": api_key}
+    else:
+        params = {}
 
     # if endpoint requires input_json
     if input_params is not None:
@@ -67,11 +70,31 @@ def get_most_played_games(api_key: str):
     """ Fetches the most played games from Steam charts. """
     return _make_request(urls.MOST_PLAYED_GAMES, api_key)
 
+def get_global_achievement_percentages(app_id: int):
+    """ Fetches global achievement percentages for a specific game. """
+    params = {
+        "gameid": app_id
+    }
+    #This endpoint does not require an API key so I wont call the _make_request function here
+    response = requests.get(urls.GLOBAL_ACHIEVEMENT_PERC, params=params, timeout=15)
+    response.raise_for_status()
+    return response.json()
 
-def get_top_releases_pages(api_key: str):
-    """ Fetches the top releases pages from Steam charts. """
-    return _make_request(urls.TOP_RELEASES_PAGES, api_key)
+def get_number_of_current_players(app_id: int):
+    """ Fetches the number of current players for a specific game. """
+    params = {
+        "appid": app_id
+    }
+    #This endpoint does not require an API key so I wont call the _make_request function here
+    response = requests.get(urls.CURRENT_PLAYERS, params=params, timeout=15)
+    response.raise_for_status()
+    return response.json()
 
+def get_steam_level_distribution(api_key: str, level: int):
+    """ Fetches the distribution of Steam levels among users. """
+    params = {
+        "player_level": level}
+    return _make_request(urls.STEAM_LEVEL_DIST, api_key, params)
 
 
 # User Functions
