@@ -13,6 +13,7 @@ MOST_PLAYED_GAMES = f"{BASE_URL}/ISteamChartsService/GetMostPlayedGames/v1/"
 # ISteamUserStats 
 GLOBAL_ACHIEVEMENT_PERC = f"{BASE_URL}/ISteamUserStats/GetGlobalAchievementPercentagesForApp/v2/"
 CURRENT_PLAYERS = f"{BASE_URL}/ISteamUserStats/GetNumberOfCurrentPlayers/v1/"
+SCHEMA_GAME = f"{BASE_URL}/ISteamUserStats/GetSchemaForGame/v2/"
 U_STATS_FOR_GAME = f"{BASE_URL}/ISteamUserStats/GetUserStatsForGame/v2/"
 
 # IPlayerService

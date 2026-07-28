@@ -1,8 +1,11 @@
 from jobs import endpoints as urls
+from datetime import datetime
+from typing import Optional
 import logging
 import time
 import requests
 import json
+import re
 
 logger = logging.getLogger(__name__)
 
@@ -32,7 +35,7 @@ def get_app_details(app_id):
     """ Fetches metadata for a specific game. """
     params = {
         "appids": app_id, 
-        "cc": "mx", 
+        "cc": "us", 
         "l": "english"
         }
     #This endpoint does not require an API key so I wont call the _make_request function here
@@ -80,6 +83,16 @@ def get_global_achievement_percentages(app_id: int):
     response.raise_for_status()
     return response.json()
 
+def get_schema_for_game(api_key: str,app_id: int):
+    """ Fetches the schema for a specific game. """
+    params = {
+        "key": api_key,
+        "appid": app_id
+    }
+    response = requests.get(urls.SCHEMA_GAME, params=params, timeout=15)
+    response.raise_for_status()
+    return response.json()
+
 def get_number_of_current_players(app_id: int):
     """ Fetches the number of current players for a specific game. """
     params = {
@@ -95,6 +108,30 @@ def get_steam_level_distribution(api_key: str, level: int):
     params = {
         "player_level": level}
     return _make_request(urls.STEAM_LEVEL_DIST, api_key, params)
+
+def get_synced_game_achievements(api_key, appid):
+    """Synchronizes achievements from game schema and achievement percentages."""  
+    achievements = get_schema_for_game(api_key, appid)["game"]["availableGameStats"]["achievements"]
+    achievements_percent = get_global_achievement_percentages(appid)["achievementpercentages"]["achievements"]
+
+    percentage_dict = {item["name"]: item["percent"] for item in achievements_percent}
+
+    full_achievements = []
+
+    for achievement in achievements:
+        name = achievement["name"]
+        porcentaje = percentage_dict.get(name, 0.0)
+
+        all_achievements = {
+            "name": name,
+            "displayName": achievement.get("displayName", name),
+            "description": achievement.get("description", ""),
+            "percent": float(porcentaje)
+        }
+
+        full_achievements.append(all_achievements)
+
+    return full_achievements
 
 
 # User Functions
@@ -127,14 +164,18 @@ def get_steam_level(api_key: str, steam_id: int):
     }
     return _make_request(urls.U_STEAM_LEVEL, api_key, params)
 
-def get_top_achievements(api_key: str, steam_id: int, app_id: int):
-    """ Fetches the top achievements for a specific user. """
+def get_top_achievements(api_key: str, steam_id: int, app_ids: list[int]):
+    """Fetches the top achievements for a specific user across multiple games."""
+
     params = {
         "key": api_key,
         "steamid": steam_id,
-        "max_achievements": 5,
-        "appids[0]" : app_id
+        "max_achievements": 10,
     }
+
+    for i, app_id in enumerate(app_ids):
+        params[f"appids[{i}]"] = app_id
+
     response = requests.get(urls.U_TOP_ACHIEVEMENTS, params=params, timeout=15)
     response.raise_for_status()
     return response.json()
@@ -172,6 +213,33 @@ def get_user_stats_for_game(api_key: str, steam_id: int, app_id: int):
     response.raise_for_status()
     return response.json()
 
+# Data cleaning and transformation functions
+
+def remove_html_tags(html_text):
+    spaced_text = re.sub(r'<[^>]+>', ' ', html_text)
+    clean_text = re.sub(r'\s+', ' ', spaced_text)
+    return clean_text.strip()
+
+def extract_price_from_string(str_price):
+    match = re.search(r'\d+(?:[.,]\d+)*', str_price)
+    
+    if match:
+        num_str = match.group()
+        if ',' in num_str and '.' in num_str:
+            num_str = num_str.replace(',', '')
+        elif ',' in num_str and '.' not in num_str:
+            num_str = num_str.replace(',', '.')
+            
+        return float(num_str)
+    
+    return 0.0 
+
+def string_to_date(fecha_str: str):
+    try:
+        return datetime.strptime(fecha_str, "%b %d, %Y").date()
+    except ValueError as e:
+        print(f"Error: '{fecha_str}' is not valid. Should be 'MM DD, AAAA'")
+        return None
 
 def run(conn, load, transform, api_key, max_games=None):
     logger.info("Fetching full Steam app list...")
