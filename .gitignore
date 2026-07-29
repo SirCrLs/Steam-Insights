@@ -72,3 +72,5 @@ data/processed/*
 *.swp
 *.swo
 ```
+# Exclude steamspy downloaded json
+*steamspy*.json
