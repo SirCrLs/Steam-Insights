@@ -68,11 +68,6 @@ def get_games_by_current_players(api_key: str):
     """ Fetches games by current players from Steam charts. """
     return _make_request(urls.GAMES_BY_CURRENT_PLAYERS, api_key)
 
-
-def get_most_played_games(api_key: str):
-    """ Fetches the most played games from Steam charts. """
-    return _make_request(urls.MOST_PLAYED_GAMES, api_key)
-
 def get_global_achievement_percentages(app_id: int):
     """ Fetches global achievement percentages for a specific game. """
     params = {
@@ -241,38 +236,3 @@ def string_to_date(fecha_str: str):
         print(f"Error: '{fecha_str}' is not valid. Should be 'MM DD, AAAA'")
         return None
 
-def run(conn, load, transform, api_key, max_games=None):
-    logger.info("Fetching full Steam app list...")
-    apps = get_app_list(api_key)
-    logger.info(f"{len(apps)} apps found in the Steam catalog.")
-
-    if max_games:
-        apps = apps[:max_games]
-
-    for app in apps:
-        app_id = app["appid"]
-        name = app.get("name")
-
-        if not name:
-            continue
-
-        try:
-            details = get_app_details(app_id)
-            if details is None:
-                continue
-
-            load.save_raw_response(conn, "appdetails", {"appids": app_id}, details)
-
-            game_row = transform.transform_game_details(app_id, details)
-            load.upsert_game(conn, game_row)
-
-            logger.info(f"Saved: {name} (app_id={app_id})")
-
-        except Exception as e:
-            logger.warning(f"Error processing app_id={app_id} ({name}): {e}")
-            continue
-
-        time.sleep(1.5)
-
-    conn.commit()
-    logger.info("Catalog sync completed.")

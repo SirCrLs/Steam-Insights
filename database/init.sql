@@ -3,7 +3,6 @@
 CREATE EXTENSION IF NOT EXISTS pg_trgm;
 
 -- Tabla: games
--- Catálogo de juegos (GetAppList + appdetails)
 CREATE TABLE games (
     app_id INTEGER PRIMARY KEY,
     name TEXT NOT NULL,
@@ -18,6 +17,7 @@ CREATE TABLE games (
     metacritic_score SMALLINT,
     release_date DATE,
     price_usd NUMERIC(10,2),
+    peak_players INTEGER,
     is_free BOOLEAN,
     rating SMALLINT,
     total_achievements SMALLINT,

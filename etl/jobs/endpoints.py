@@ -8,7 +8,6 @@ POPULAR_TAGS = f"{BASE_URL}/IStoreService/GetMostPopularTags/v1/"
 
 # ISteamChartsService
 GAMES_BY_CURRENT_PLAYERS = f"{BASE_URL}/ISteamChartsService/GetGamesByConcurrentPlayers/v1/"
-MOST_PLAYED_GAMES = f"{BASE_URL}/ISteamChartsService/GetMostPlayedGames/v1/"
 
 # ISteamUserStats 
 GLOBAL_ACHIEVEMENT_PERC = f"{BASE_URL}/ISteamUserStats/GetGlobalAchievementPercentagesForApp/v2/"
