@@ -208,6 +208,22 @@ def get_user_stats_for_game(api_key: str, steam_id: int, app_id: int):
     response.raise_for_status()
     return response.json()
 
+# STEAMSPY FUNCTIONS
+""" Second API for steam that allows much more request """
+
+def steamspy_get_game_details(page : str = "0", request : str = "all"):
+    """ Gets 1 page of steam (1000 games) it has 1 minute cooldown """
+    data_request = dict()
+    data_request['request'] = request
+    data_request['page'] = page
+
+    data = steamspypi.download(data_request)
+    return data
+
+def steamspy_get_all_games(max_page : int):
+    """ Gets all games until the max_page parameter, each page is 1000 games """
+    return steamspypi.download_all_pages(max_page)
+
 # Data cleaning and transformation functions
 
 def remove_html_tags(html_text):
