@@ -1,8 +1,8 @@
 from jobs import endpoints as urls
 from datetime import datetime
 from typing import Optional
+import steamspypi
 import logging
-import time
 import requests
 import json
 import re
