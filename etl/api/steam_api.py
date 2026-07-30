@@ -1,4 +1,4 @@
-from jobs import endpoints as urls
+from api import endpoints as urls
 from datetime import datetime
 from typing import Optional
 import steamspypi
@@ -32,7 +32,7 @@ def _make_request(url: str, api_key: str = None, input_params: Optional[dict] = 
 # Functions to fetch data from Steam API endpoints
 
 def get_app_details(app_id):
-    """ Fetches metadata for a specific game. """
+    """ Fetches metadata for a specific game. (max 10 appids) """
     params = {
         "appids": app_id, 
         "cc": "us", 
@@ -41,7 +41,22 @@ def get_app_details(app_id):
     #This endpoint does not require an API key so I wont call the _make_request function here
     response = requests.get(urls.APP_DETAILS, params=params, timeout=15)
     response.raise_for_status()
-    return response.json()
+    return clean_app_details(response.json(), app_id)
+
+def clean_app_details(r : json, app_id):
+    r = r[f"{app_id}"]["data"]
+    r["short_description"] = remove_html_tags(r["short_description"])
+    r["supported_languages"] = extract_languages(r["supported_languages"])
+
+    r["pc_requirements"]["minimum_specs"] = parse_requirements(r["pc_requirements"]["minimum"])
+    r["pc_requirements"]["recommended_specs"] = parse_requirements(r["pc_requirements"]["recommended"])
+    r["pc_requirements"]["minimum"] = remove_html_tags(r["pc_requirements"]["minimum"])
+    r["pc_requirements"]["recommended"] =remove_html_tags(r["pc_requirements"]["recommended"] )
+
+    r["release_date"]["date"] = string_to_date(r["release_date"]["date"]) 
+    r["price_overview"]["final_formatted"] = extract_price_from_string(r["price_overview"]["final_formatted"])
+    r["ratings"] = next(iter(r["ratings"].values()), None)
+    return r 
 
 def get_app_list(api_key: str, max_results: int = 200):
     """ Fetches the full list of AppIDs from Steam. """
@@ -227,7 +242,7 @@ def steamspy_get_all_games(max_page : int):
 # Data cleaning and transformation functions
 
 def remove_html_tags(html_text):
-    spaced_text = re.sub(r'<[^>]+>', ' ', html_text)
+    spaced_text = re.sub(r'<[^>]+>|\*', ' ', html_text)
     clean_text = re.sub(r'\s+', ' ', spaced_text)
     return clean_text.strip()
 
@@ -245,6 +260,61 @@ def extract_price_from_string(str_price):
     
     return 0.0 
 
+def extract_languages(text_input):
+    clean_text = text_input.split('<br>')[0]
+    clean_text = re.sub(r'<[^>]+>', '', clean_text)
+    clean_text = clean_text.replace('*', '') 
+    languages_list = []
+    for lang in clean_text.split(','):
+        lang = lang.strip()
+        if lang:
+            if '-' in lang:
+                lang = lang.split('-')[0].strip()
+            languages_list.append(lang)
+            
+    return languages_list
+
+def parse_requirements(raw_html):
+    """ extract processor, graphics, memory and storage """
+    if not raw_html:
+        return {
+            "processor": None,
+            "graphics": None,
+            "memory_gb": None,
+            "storage_gb": None,
+        }
+
+    li_pattern = r'<li>(?:<strong>(.*?):?</strong>)?\s*(.*?)</li>'
+    matches = re.findall(li_pattern, raw_html, re.IGNORECASE | re.DOTALL)
+
+    fields = {}
+    for label, value in matches:
+        if not label:
+            continue
+        clean_label = re.sub(r'[*\s]+$', '', label.strip()).lower()
+        clean_value = re.sub(r'<[^>]+>', '', value).strip()
+        fields[clean_label] = clean_value
+
+    memory_gb = None
+    if "memory" in fields:
+        m = re.search(r'([\d.]+)\s*GB', fields["memory"], re.IGNORECASE)
+        if m:
+            memory_gb = float(m.group(1))
+
+    storage_gb = None
+    if "storage" in fields:
+        m = re.search(r'([\d.]+)\s*GB', fields["storage"], re.IGNORECASE)
+        if m:
+            storage_gb = float(m.group(1))
+
+    return {
+        "processor": fields.get("processor"),
+        "graphics": fields.get("graphics"),
+        "memory_gb": memory_gb,
+        "storage_gb": storage_gb,
+    }
+
+
 def string_to_date(fecha_str: str):
     try:
         return datetime.strptime(fecha_str, "%b %d, %Y").date()
@@ -252,3 +322,139 @@ def string_to_date(fecha_str: str):
         print(f"Error: '{fecha_str}' is not valid. Should be 'MM DD, AAAA'")
         return None
 
+def download_json(data, filename="data.json"):
+    try:
+        with open(filename, "w", encoding="utf-8") as file:
+            json.dump(data, file, indent=4, ensure_ascii=False)
+        print(f"Successfully saved to {filename}")
+    except Exception as e:
+        print(f"An error occurred: {e}")
+
+# Transform
+
+def transform_game_stubs(games_list):
+    """
+    Step 2 of GAMES: minimal rows (app_id + name) from the combined
+    SteamSpy + current-players list, before enrichment.
+    """
+    rows = []
+    for game in games_list:
+        app_id = game.get("appid")
+        name = game.get("name")
+        if not app_id or not name:
+            continue
+        rows.append({"app_id": app_id, "name": name})
+    return rows
+
+
+def transform_game_details(app_id, details):
+    """
+    Step 3a of GAMES: maps the appdetails response to the full
+    games row (genre, price, release date, etc).
+    """
+    price_overview = details.get("price_overview") or {}
+    price_usd = price_overview.get("final")  # cents, e.g. 1999 = $19.99
+    price_usd = price_usd / 100 if price_usd is not None else None
+
+    release_date_raw = details.get("release_date", {}).get("date")
+
+    return {
+        "app_id": app_id,
+        "name": details.get("name"),
+        "genre": [g["description"] for g in details.get("genres", [])],
+        "release_date": release_date_raw,  # cast/parsed in load.py if needed
+        "price_usd": price_usd,
+        "is_free": details.get("is_free", False),
+        "developer": ", ".join(details.get("developers", [])) or None,
+        "publisher": ", ".join(details.get("publishers", [])) or None,
+        "metacritic_score": details.get("metacritic", {}).get("score"),
+        "positive_reviews": None,  # not in appdetails; filled separately if you add a reviews call
+        "negative_reviews": None,
+    }
+
+
+def transform_achievements(app_id, schema_response):
+    """
+    Step 3b of GAMES: maps GetSchemaForGame response to achievements rows
+    (the catalog of possible achievements for a game).
+    """
+    game_data = schema_response.get("game", {})
+    available = game_data.get("availableGameStats", {}).get("achievements", [])
+
+    rows = []
+    for ach in available:
+        rows.append({
+            "app_id": app_id,
+            "achievement_key": ach.get("name"),
+            "display_name": ach.get("displayName"),
+            "description": ach.get("description"),
+            "global_unlock_pct": None,  # comes from a separate endpoint if you want it
+        })
+    return rows
+
+
+def transform_user(raw_summary):
+    """
+    USERS step 2a: maps GetPlayerSummaries to a users row.
+    """
+    players = raw_summary.get("response", {}).get("players", [])
+    if not players:
+        raise ValueError("No player data in GetPlayerSummaries response.")
+
+    player = players[0]
+
+    return {
+        "steam_id": int(player["steamid"]),
+        "persona_name": player.get("personaname"),
+        "profile_url": player.get("profileurl"),
+        "country_code": player.get("loccountrycode"),
+        "account_created": player.get("timecreated"),  # unix timestamp, cast in load.py
+        "is_public": player.get("communityvisibilitystate") == 3,
+    }
+
+
+def transform_owned_games(raw_games, valid_app_ids):
+    """
+    USERS step 2b: maps GetOwnedGames to user_games rows,
+    skipping games not present in the games table (valid_app_ids).
+    """
+    games = raw_games.get("response", {}).get("games", [])
+    rows = []
+    skipped = 0
+
+    for game in games:
+        app_id = game["appid"]
+        if app_id not in valid_app_ids:
+            skipped += 1
+            continue
+
+        rows.append({
+            "app_id": app_id,
+            "playtime_forever_minutes": game.get("playtime_forever", 0),
+            "playtime_2weeks_minutes": game.get("playtime_2weeks", 0),
+        })
+
+    return rows, skipped
+
+
+def transform_user_achievements(raw_achievements, steam_id, app_id):
+    """
+    USERS step 2c: maps GetPlayerAchievements to user_achievements rows.
+    """
+    playerstats = raw_achievements.get("playerstats", {})
+    if not playerstats.get("success"):
+        return []
+
+    achievements = playerstats.get("achievements", [])
+    rows = []
+
+    for ach in achievements:
+        rows.append({
+            "steam_id": steam_id,
+            "app_id": app_id,
+            "achievement_key": ach.get("apiname"),
+            "unlocked": bool(ach.get("achieved")),
+            "unlock_time": ach.get("unlocktime") or None,  # unix timestamp, 0 if not unlocked
+        })
+
+    return rows
