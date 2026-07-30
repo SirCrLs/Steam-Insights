@@ -1,6 +1,9 @@
 requests
-pandas
-sqlalchemy
-psycopg2-binary
 python-dotenv
 steamspypi
+logging
+json
+re
+typing
+datetime
+os

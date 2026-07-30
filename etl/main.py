@@ -1,29 +1,32 @@
-from jobs.steam_api import *
+from sync_data import sync_games, sync_users, logger
+from dotenv import load_dotenv
+from db import get_connection
+import os
 
 """ VARIABLES """
 
-max_page = 3 # each page is 1000 games 
+MAX_PAGE = 3  # SteamSpy: each page is 1000 games
+SEED_FILE = "seed_steam_ids.txt"
 
-""" GAMES """
+def main():
+    load_dotenv()
+    api_key = os.environ["STEAM_API_KEY"]
+    conn = get_connection()
 
-# 1. Download game list JSON 
-#    a. Call get_games_by_current_players()
-#    b. Call steamspy_get_all_games(max_page)
+    try:
+        print("\n=== 1. Syncing games catalog ===")
+        sync_games(conn, api_key, MAX_PAGE)
 
-# 2. Insert game list into the database (app_id + name)
+        print("\n=== 2. Syncing users ===")
+        sync_users(conn, api_key, SEED_FILE)
 
-# 3. For each game already in the database (SELECT app_id FROM games):
-#    a. Fetch appdetails(app_id)
-#    b. Fetch get_synced_game_achievements(app_id) 
+    except Exception as e:
+        conn.rollback()
+        logger.error(f"ETL failed: {e}")
+        raise
+    finally:
+        conn.close()
 
 
-""" USERS """
-
-# 1. Get seed SteamIDs
-#    - Prompt SteamIDs from a .txt
-
-# 2. For each SteamID in the seed list:
-#    a. Fetch GetPlayerSummaries(steam_id)
-#    b. Fetch GetOwnedGames(steam_id) (skip games that are not on db)
-#    c. Fetch GetPlayerAchievements(steam_id, app_id)
-
+if __name__ == "__main__":
+    main()
