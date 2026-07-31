@@ -43,21 +43,6 @@ def get_app_details(app_id):
     response.raise_for_status()
     return clean_app_details(response.json(), app_id)
 
-def clean_app_details(r : json, app_id):
-    r = r[f"{app_id}"]["data"]
-    r["short_description"] = remove_html_tags(r["short_description"])
-    r["supported_languages"] = extract_languages(r["supported_languages"])
-
-    r["pc_requirements"]["minimum_specs"] = parse_requirements(r["pc_requirements"]["minimum"])
-    r["pc_requirements"]["recommended_specs"] = parse_requirements(r["pc_requirements"]["recommended"])
-    r["pc_requirements"]["minimum"] = remove_html_tags(r["pc_requirements"]["minimum"])
-    r["pc_requirements"]["recommended"] =remove_html_tags(r["pc_requirements"]["recommended"] )
-
-    r["release_date"]["date"] = string_to_date(r["release_date"]["date"]) 
-    r["price_overview"]["final_formatted"] = extract_price_from_string(r["price_overview"]["final_formatted"])
-    r["ratings"] = next(iter(r["ratings"].values()), None)
-    return r 
-
 def get_app_list(api_key: str, max_results: int = 200):
     """ Fetches the full list of AppIDs from Steam. """
     params = {
@@ -239,7 +224,30 @@ def steamspy_get_all_games(max_page : int):
     """ Gets all games until the max_page parameter, each page is 1000 games """
     return steamspypi.download_all_pages(max_page)
 
+# ====
 # Data cleaning and transformation functions
+# ====
+
+def clean_app_details(r : json, app_id):
+    r = r[f"{app_id}"]["data"]
+    r["short_description"] = remove_html_tags(r["short_description"])
+    r["supported_languages"] = extract_languages(r["supported_languages"])
+    r["genres"] = extract_categories(r["genres"])
+    r["categories"] = extract_categories(r["categories"])
+    r["metacritic"] = r["metacritic"]["score"]
+    r["pc_requirements"]["minimum_specs"] = parse_requirements(r["pc_requirements"]["minimum"])
+    r["pc_requirements"]["recommended_specs"] = parse_requirements(r["pc_requirements"]["recommended"])
+    r["pc_requirements"]["minimum"] = remove_html_tags(r["pc_requirements"]["minimum"])
+    r["pc_requirements"]["recommended"] =remove_html_tags(r["pc_requirements"]["recommended"] )
+
+    r["release_date"]["date"] = string_to_date(r["release_date"]["date"]) 
+    r["price_overview"]["final_formatted"] = extract_price_from_string(r["price_overview"]["final_formatted"])
+    r["ratings"] = next(iter(r["ratings"].values()), None)
+    return r 
+
+def extract_categories(r : json):
+    descriptions_array = [item['description'] for item in r if 'description' in item]
+    return descriptions_array
 
 def remove_html_tags(html_text):
     spaced_text = re.sub(r'<[^>]+>|\*', ' ', html_text)
