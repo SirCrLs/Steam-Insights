@@ -356,9 +356,9 @@ def transform_game_details(app_id, data):
     """
     Step 3a of GAMES: maps the appdetails response to the full games schema.
     """
-    if not data or not data.get("success", False):
+    if not data:
         return None
-    
+
     specs_min = data.get("pc_requirements").get("minimum_specs")
     specs_rec = data.get("pc_requirements").get("recommended_specs")
     platforms = data.get("platforms")
@@ -392,7 +392,7 @@ def transform_game_details(app_id, data):
         "is_free": data.get("is_free", False),
         "rating": data.get("ratings").get("rating", None), 
         "total_achievements": data.get("achievements", {}).get("total", 0),
-        "fetched_at": datetime.datetime.now()
+        "fetched_at": datetime.now()
     }
 
 def transform_achievements(app_id, schema_response):
