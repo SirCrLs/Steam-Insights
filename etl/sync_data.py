@@ -64,7 +64,7 @@ def sync_games(conn, api_key, MAX_PAGE):
                 loader.upsert_game(conn, game_row)
 
             # achievement schema
-            achievements = get_synced_game_achievements(app_id)
+            achievements = get_synced_game_achievements(api_key,app_id)
             if achievements:
                 achievement_rows = transform_achievements(app_id, achievements)
                 loader.upsert_achievements(conn, achievement_rows)

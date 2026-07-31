@@ -29,7 +29,9 @@ def _make_request(url: str, api_key: str = None, input_params: Optional[dict] = 
         print(f"Error on {url}: {e}")
         return {}
 
+# ===
 # Functions to fetch data from Steam API endpoints
+# ===
 
 def get_app_details(app_id):
     """ Fetches metadata for a specific game. (max 10 appids) """
@@ -55,7 +57,6 @@ def get_app_list(api_key: str, max_results: int = 200):
     }
 
     return _make_request(urls.APP_LIST, api_key, params)
-
 
 def get_popular_tags(api_key: str):
     """ Fetches the most popular tags from Steam store. """
@@ -128,8 +129,9 @@ def get_synced_game_achievements(api_key, appid):
 
     return full_achievements
 
-
+# ===
 # User Functions
+# ===
 
 def get_owned_games(api_key: str, steam_id: int):
     """ Fetches the list of games owned by a specific user. """
@@ -337,12 +339,12 @@ def download_json(data, filename="data.json"):
     except Exception as e:
         print(f"An error occurred: {e}")
 
-# Transform
+# ===
+# Transform functions
+# ===
 
 def transform_game_stubs(games_list):
-    """
-    Step 2 of GAMES: minimal rows (app_id + name) from the combined
-    """
+    """ minimal rows (app_id + name) from the combined """
     rows = []
     for game in games_list:
         app_id = game.get("appid")
@@ -353,9 +355,7 @@ def transform_game_stubs(games_list):
     return rows
 
 def transform_game_details(app_id, data):
-    """
-    Step 3a of GAMES: maps the appdetails response to the full games schema.
-    """
+    """ maps the appdetails response to the full games schema. """
     if not data:
         return None
 
@@ -396,10 +396,7 @@ def transform_game_details(app_id, data):
     }
 
 def transform_achievements(app_id, schema_response):
-    """
-    Step 3b of GAMES: maps GetSchemaForGame response to achievements rows
-    (the catalog of possible achievements for a game).
-    """
+    """ maps GetSchemaForGame response to achievements rows """
     game_data = schema_response.get("game", {})
     available = game_data.get("availableGameStats", {}).get("achievements", [])
 
@@ -416,9 +413,7 @@ def transform_achievements(app_id, schema_response):
 
 
 def transform_user(raw_summary):
-    """
-    USERS step 2a: maps GetPlayerSummaries to a users row.
-    """
+    """ maps GetPlayerSummaries to a users row. """
     players = raw_summary.get("response", {}).get("players", [])
     if not players:
         raise ValueError("No player data in GetPlayerSummaries response.")
@@ -436,10 +431,7 @@ def transform_user(raw_summary):
 
 
 def transform_owned_games(raw_games, valid_app_ids):
-    """
-    USERS step 2b: maps GetOwnedGames to user_games rows,
-    skipping games not present in the games table (valid_app_ids).
-    """
+    """ maps GetOwnedGames to user_games rows """
     games = raw_games.get("response", {}).get("games", [])
     rows = []
     skipped = 0
@@ -460,9 +452,7 @@ def transform_owned_games(raw_games, valid_app_ids):
 
 
 def transform_user_achievements(raw_achievements, steam_id, app_id):
-    """
-    USERS step 2c: maps GetPlayerAchievements to user_achievements rows.
-    """
+    """ maps GetPlayerAchievements to user_achievements rows. """
     playerstats = raw_achievements.get("playerstats", {})
     if not playerstats.get("success"):
         return []
