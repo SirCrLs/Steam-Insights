@@ -35,7 +35,6 @@ def sync_games(conn, api_key, MAX_PAGE):
     logger.info(f"Fetching top {MAX_PAGE * 1000} games from SteamSpy...")
     steamspy_games = steamspy_get_all_games(MAX_PAGE)
 
-    # Combine + deduplicate by app_id
     combined = {}
     for game in steamspy_games + current_players_games:
         app_id = game["appid"]
@@ -57,14 +56,14 @@ def sync_games(conn, api_key, MAX_PAGE):
 
     for app_id in app_ids:
         try:
-            # a. appdetails
+            # appdetails
             details = get_appdetails(app_id)
             if details:
                 loader.save_raw_response(conn, "appdetails", {"appids": app_id}, details)
                 game_row = transform_game_details(app_id, details)
                 loader.upsert_game(conn, game_row)
 
-            # b. achievement schema
+            # achievement schema
             achievements = get_synced_game_achievements(app_id)
             if achievements:
                 achievement_rows = transform_achievements(app_id, achievements)
