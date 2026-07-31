@@ -239,9 +239,8 @@ def clean_app_details(r : json, app_id):
     r["pc_requirements"]["recommended_specs"] = parse_requirements(r["pc_requirements"]["recommended"])
     r["pc_requirements"]["minimum"] = remove_html_tags(r["pc_requirements"]["minimum"])
     r["pc_requirements"]["recommended"] =remove_html_tags(r["pc_requirements"]["recommended"] )
-
     r["release_date"]["date"] = string_to_date(r["release_date"]["date"]) 
-    r["price_overview"]["final_formatted"] = extract_price_from_string(r["price_overview"]["final_formatted"])
+    r["price_overview"] = extract_price_from_string(r["price_overview"]["final_formatted"])
     r["ratings"] = next(iter(r["ratings"].values()), None)
     return r 
 
@@ -343,7 +342,6 @@ def download_json(data, filename="data.json"):
 def transform_game_stubs(games_list):
     """
     Step 2 of GAMES: minimal rows (app_id + name) from the combined
-    SteamSpy + current-players list, before enrichment.
     """
     rows = []
     for game in games_list:
@@ -354,32 +352,48 @@ def transform_game_stubs(games_list):
         rows.append({"app_id": app_id, "name": name})
     return rows
 
-
-def transform_game_details(app_id, details):
+def transform_game_details(app_id, data):
     """
-    Step 3a of GAMES: maps the appdetails response to the full
-    games row (genre, price, release date, etc).
+    Step 3a of GAMES: maps the appdetails response to the full games schema.
     """
-    price_overview = details.get("price_overview") or {}
-    price_usd = price_overview.get("final")  # cents, e.g. 1999 = $19.99
-    price_usd = price_usd / 100 if price_usd is not None else None
+    if not data or not data.get("success", False):
+        return None
+    
+    specs_min = data.get("pc_requirements").get("minimum_specs")
+    specs_rec = data.get("pc_requirements").get("recommended_specs")
+    platforms = data.get("platforms")
+    release_date = data.get("release_date").get("date")
 
-    release_date_raw = details.get("release_date", {}).get("date")
-
+    # Return
     return {
-        "app_id": app_id,
-        "name": details.get("name"),
-        "genre": [g["description"] for g in details.get("genres", [])],
-        "release_date": release_date_raw,  # cast/parsed in load.py if needed
-        "price_usd": price_usd,
-        "is_free": details.get("is_free", False),
-        "developer": ", ".join(details.get("developers", [])) or None,
-        "publisher": ", ".join(details.get("publishers", [])) or None,
-        "metacritic_score": details.get("metacritic", {}).get("score"),
-        "positive_reviews": None,  # not in appdetails; filled separately if you add a reviews call
-        "negative_reviews": None,
+        "app_id": int(app_id),
+        "name": data.get("name"),
+        "short_description": data.get("short_description"),
+        "genres": data.get("genres"),                                    # TEXT[]
+        "categories": data.get("categories"),                            # TEXT[]
+        "supported_languages": data.get("supported_languages"),
+        "header_image": data.get("header_image"),
+        "pc_requirements_minimum": data.get("pc_requirements").get("minimum"),
+        "pc_requirements_recommended": data.get("pc_requirements").get("recommended"),
+        
+        # Index [0] = minimum, [1] = recommended
+        "processor": [specs_min.get("processor"), specs_rec.get("processor")], 
+        "graphics": [specs_min.get("graphics"), specs_rec.get("graphics")],                     
+        "ram_requirement": [specs_min.get("memory_gb"), specs_rec.get("memory_gb")],      
+        "storage_requirement": [specs_min.get("storage_gb"), specs_rec.get("storage_gb")], 
+        
+        "developers": data.get("developers"),
+        "is_on_windows": platforms.get("windows", False),
+        "is_on_mac": platforms.get("mac", False),
+        "is_on_linux": platforms.get("linux", False),
+        "metacritic_score": data.get("metacritic", {}), # SMALLINT
+        "release_date": release_date,
+        "price_usd": data.get("price_overview", 0),
+        "is_free": data.get("is_free", False),
+        "rating": data.get("ratings").get("rating", None), 
+        "total_achievements": data.get("achievements", {}).get("total", 0),
+        "fetched_at": datetime.datetime.now()
     }
-
 
 def transform_achievements(app_id, schema_response):
     """
