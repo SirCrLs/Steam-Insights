@@ -58,6 +58,7 @@ artifacts/
 # Data
 data/raw/*
 data/processed/*
+seed_steam_ids.txt
 
 # Keep folder structure
 !data/raw/.gitkeep

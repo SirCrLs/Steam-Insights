@@ -233,7 +233,7 @@ def get_friend_list(api_key, steam_id):
         
     return []
 
-def generate_steam_seed_ids(api_key, starting_steam_id, max_ids=300, output_file="seed_steam_ids.txt"):
+def generate_steam_seed_ids(api_key, starting_steam_id, max_ids=300, output_file="data/seed_steam_ids.txt"):
     """ Gathers ids until max_ids from initial Steam ID using GetFriendList. """
     collected_ids = set()
     queue = [str(starting_steam_id)]
@@ -274,7 +274,9 @@ def steamspy_get_game_details(page : str = "0", request : str = "all"):
 
 def steamspy_get_all_games(max_page : int):
     """ Gets all games until the max_page parameter, each page is 1000 games """
-    return steamspypi.download_all_pages(max_page)
+    steamspypi.download_all_pages(max_page)
+    move_json_to_folder()
+    return
 
 # ====
 # Data cleaning and transformation functions
@@ -388,6 +390,26 @@ def download_json(data, filename="data.json"):
         print(f"Successfully saved to {filename}")
     except Exception as e:
         print(f"An error occurred: {e}")
+
+def move_json_to_folder():
+    import os
+    import glob
+    import shutil
+
+    destination_folder = "data"
+    
+    if not os.path.exists(destination_folder):
+        os.makedirs(destination_folder)
+        
+    json_files = glob.glob("*.json")
+    
+    if not json_files:
+        print("No Json files to move")
+        return
+
+    for source_file in json_files:
+        destination_file = os.path.join(destination_folder, os.path.basename(source_file))
+        shutil.move(source_file, destination_file)
 
 # ===
 # Transform functions
@@ -514,7 +536,7 @@ def transform_user_achievements(raw_achievements, steam_id, app_id):
             "app_id": app_id,
             "achievement_key": ach.get("apiname"),
             "unlocked": bool(ach.get("achieved")),
-            "unlock_time": ach.get("unlocktime") or None,  # unix timestamp, 0 if not unlocked
+            "unlock_time": ach.get("unlocktime") or None, 
         })
 
     return rows

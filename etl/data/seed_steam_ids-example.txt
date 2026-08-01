@@ -1,0 +1,13 @@
+In this file should be every steamID youre going to use like this
+the file should be named seed_steam_ids.txt
+
+STEAM_ID_1
+STEAM_ID_2
+STEAM_ID_3
+...
+
+or you can feed only 1 steamID to my script generate_steam_seed_ids()
+to generate this file with the necessary ids
+
+syntaxis 
+generate_steam_seed_ids(api_key, starting_steam_id, max_ids=300, output_file="data/seed_steam_ids.txt")
