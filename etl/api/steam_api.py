@@ -1,6 +1,7 @@
 from api import endpoints as urls
 from datetime import datetime
 from typing import Optional
+from pathlib import Path
 import steamspypi
 import logging
 import time
@@ -276,7 +277,7 @@ def steamspy_get_all_games(max_page : int):
     """ Gets all games until the max_page parameter, each page is 1000 games """
     steamspypi.download_all_pages(max_page)
     move_json_to_folder()
-    return
+    return 
 
 # ====
 # Data cleaning and transformation functions
@@ -410,6 +411,29 @@ def move_json_to_folder():
     for source_file in json_files:
         destination_file = os.path.join(destination_folder, os.path.basename(source_file))
         shutil.move(source_file, destination_file)
+
+def read_various_jsons(directory_path: str = "data", output_file_name: str = "data/merged_output.json"):
+    """Reads all JSON files in a directory and merges them into one unique dictionary object."""
+    combined_data = {}
+    dir_path = Path(directory_path)
+    json_files = dir_path.glob("*.json")
+    
+    for file_path in json_files:
+        try:
+            with open(file_path, "r", encoding="utf-8") as file:
+                data = json.load(file)
+                
+                if isinstance(data, dict):
+                    combined_data.update(data)
+                else:
+                    print(f"Skipping {file_path.name}: File content is not a JSON object/dictionary.")
+                    
+        except (json.JSONDecodeError, FileNotFoundError) as error:
+            print(f"Skipping {file_path.name} due to error: {error}")
+            continue
+            
+    download_json(combined_data, output_file_name)
+    return combined_data
 
 # ===
 # Transform functions
