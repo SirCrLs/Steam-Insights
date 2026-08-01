@@ -3,6 +3,7 @@ from datetime import datetime
 from typing import Optional
 import steamspypi
 import logging
+import time
 import requests
 import json
 import re
@@ -210,6 +211,55 @@ def get_user_stats_for_game(api_key: str, steam_id: int, app_id: int):
     response.raise_for_status()
     return response.json()
 
+def get_friend_list(api_key, steam_id):
+    params = {
+        'key': api_key,
+        'steamid': str(steam_id),
+        'relationship': 'friend'
+    }
+    
+    try:
+        response = requests.get(urls.U_GET_FRIEND_LIST, params=params, timeout=15)
+        if response.status_code == 401:
+            return []
+            
+        if response.status_code == 200:
+            data = response.json()
+            friends = data.get('friendslist', {}).get('friends', [])
+            return friends
+            
+    except requests.exceptions.RequestException as e:
+        print(f"Something went wrong with {steam_id}: {e}")
+        
+    return []
+
+def generate_steam_seed_ids(api_key, starting_steam_id, max_ids=300, output_file="seed_steam_ids.txt"):
+    """ Gathers ids until max_ids from initial Steam ID using GetFriendList. """
+    collected_ids = set()
+    queue = [str(starting_steam_id)]
+
+    while queue and len(collected_ids) < max_ids:
+        current_id = queue.pop(0)
+        
+        friends_found = get_friend_list(api_key, current_id)
+        
+        for friend_id in friends_found:
+            if friend_id not in collected_ids:
+                collected_ids.add(friend_id)
+                queue.append(friend_id)
+
+                if len(collected_ids) >= max_ids:
+                    break
+                    
+        time.sleep(0.1)
+        
+    with open(output_file, "w", encoding="utf-8") as f:
+        for steam_id in list(collected_ids)[:max_ids]:
+            f.write(f"{steam_id}\n")
+            
+    print(f"Finished. storaged {len(collected_ids)} IDs on '{output_file}'.")
+    return list(collected_ids)
+
 # STEAMSPY FUNCTIONS
 """ Second API for steam that allows much more request """
 
@@ -397,17 +447,15 @@ def transform_game_details(app_id, data):
 
 def transform_achievements(app_id, schema_response):
     """ maps GetSchemaForGame response to achievements rows """
-    game_data = schema_response.get("game", {})
-    available = game_data.get("availableGameStats", {}).get("achievements", [])
 
     rows = []
-    for ach in available:
+    for ach in schema_response:
         rows.append({
             "app_id": app_id,
             "achievement_key": ach.get("name"),
             "display_name": ach.get("displayName"),
-            "description": ach.get("description"),
-            "global_unlock_pct": None,  # comes from a separate endpoint if you want it
+            "achievement_desc": ach.get("description"),
+            "global_unlock_pct": ach.get("percent"),
         })
     return rows
 
@@ -425,7 +473,7 @@ def transform_user(raw_summary):
         "persona_name": player.get("personaname"),
         "profile_url": player.get("profileurl"),
         "country_code": player.get("loccountrycode"),
-        "account_created": player.get("timecreated"),  # unix timestamp, cast in load.py
+        "account_created": player.get("timecreated"),  
         "is_public": player.get("communityvisibilitystate") == 3,
     }
 
