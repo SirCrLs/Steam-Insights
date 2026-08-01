@@ -1,3 +1,4 @@
+from api.steam_api import read_various_jsons
 from api.steam_api import (
     get_games_by_current_players,
     steamspy_get_all_games,
@@ -14,6 +15,7 @@ from api.steam_api import (
     transform_user_achievements
 )
 import logging
+import json
 import os
 import load as loader
 
@@ -32,8 +34,20 @@ def sync_games(conn, api_key, MAX_PAGE):
     logger.info("Fetching currently most-played games...")
     current_players_games = get_games_by_current_players(api_key)
 
-    logger.info(f"Fetching top {MAX_PAGE * 1000} games from SteamSpy...")
-    steamspy_games = steamspy_get_all_games(MAX_PAGE)
+    # Try reading, if not then downloading it
+    try:
+        with open("data/merged_output.json", "r", encoding="utf-8") as file:
+            steamspy_games = json.load(file)
+        logger.info("Successfully loaded data from merged_output.json")        
+    except (FileNotFoundError, json.JSONDecodeError) as file_error:
+        logger.error(f"Could not read merged_output.json: {file_error}")
+        logger.info(f"Fetching top {MAX_PAGE * 1000} games from SteamSpy...")
+        try:
+            steamspy_get_all_games(MAX_PAGE) # Downloads jsons
+            steamspy_games = read_various_jsons("data", "data/merged_output.json")
+        except Exception as api_error:
+            logger.error(f"Live API backup also failed: {api_error}")
+            return
 
     combined = {}
     for game in steamspy_games + current_players_games:
