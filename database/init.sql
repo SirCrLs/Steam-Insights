@@ -70,6 +70,8 @@ CREATE TABLE achievements (
     PRIMARY KEY (app_id, achievement_key)
 );
 
+CREATE INDEX idx_achievement_key ON achievements (achievement_key);
+
 -- Tabla: user_achievements
 CREATE TABLE user_achievements (
     steam_id BIGINT REFERENCES users(steam_id) ON DELETE CASCADE,
