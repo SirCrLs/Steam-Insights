@@ -117,7 +117,7 @@ def sync_games(conn, api_key, MAX_PAGE):
     logger.info("Games sync completed.")
 
 
-def sync_users(conn, api_key, SEED_FILE):
+def sync_users(conn, api_key, SEED_FILE: str = os.path.join("..", "data", "seed_steam_ids.txt")):
     """ USERS """
 
     # 1. Get seed SteamIDs from a .txt file
