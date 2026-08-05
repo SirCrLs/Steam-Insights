@@ -1,12 +1,11 @@
 from api.steam_api import read_various_jsons
 from api.steam_api import (
-    get_games_by_current_players,
-    steamspy_get_all_games,
-    get_appdetails,
+    steamspy_download_all_pages_resumable,
+    get_app_details,
     get_synced_game_achievements,
-    get_player_summary,
+    get_player_summaries,
     get_owned_games,
-    get_player_achievements,
+    get_top_achievements,
     transform_game_stubs,
     transform_game_details,
     transform_achievements,
@@ -15,6 +14,7 @@ from api.steam_api import (
     transform_user_achievements
 )
 import logging
+import glob
 import json
 import os
 import load as loader
@@ -25,23 +25,57 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-def load_games(MAX_PAGE : int):
-    try:
-        with open("data/merged_output.json", "r", encoding="utf-8") as file:
-            steamspy_games = json.load(file)
-        logger.info("Successfully loaded data from merged_output.json")
-    except (FileNotFoundError, json.JSONDecodeError) as file_error:
-        logger.error(f"Could not read merged_output.json: {file_error}")
-        logger.info(f"Fetching top {MAX_PAGE * 1000} games from SteamSpy...")
+def load_games(max_page: int, output_folder: str = os.path.join("..", "data")):
+    """
+    Loads SteamSpy games by reading each page JSON file individually.
+    """
+    combined = {}
+    missing_pages = []
+
+    for page in range(max_page):
+        matches = glob.glob(os.path.join(output_folder, f"page_{page}.json"))
+
+        if not matches:
+            missing_pages.append(page)
+            continue
+
         try:
-            steamspy_get_all_games(MAX_PAGE)
-            steamspy_games = read_various_jsons("data", "data/merged_output.json")
+            with open(matches[0], "r", encoding="utf-8") as file:
+                page_data = json.load(file)
+        except (FileNotFoundError, json.JSONDecodeError) as file_error:
+            logger.error(f"Could not read page {page} ({matches[0]}): {file_error}")
+            missing_pages.append(page)
+            continue
+
+        for app_id, game in page_data.items():
+            if app_id not in combined:
+                combined[app_id] = game
+
+        logger.info(f"Loaded page {page} from {matches[0]} ({len(page_data)} games).")
+
+    if missing_pages:
+        logger.info(f"Missing pages {missing_pages}, fetching from SteamSpy...")
+        try:
+            steamspy_download_all_pages_resumable(max_page, output_folder)
         except Exception as api_error:
-            logger.error(f"Live API backup also failed: {api_error}")
+            logger.error(f"Live API fetch failed: {api_error}")
             return None
 
-    logger.info(f"{len(steamspy_games)} games loaded from SteamSpy.")
-    return steamspy_games    
+        # Re-attempt loading only the pages that were missing
+        for page in missing_pages:
+            matches = glob.glob(os.path.join(output_folder, f"page_{page}.json"))
+            if not matches:
+                logger.error(f"Page {page} still missing after download attempt.")
+                continue
+            with open(matches[0], "r", encoding="utf-8") as file:
+                page_data = json.load(file)
+            for app_id, game in page_data.items():
+                if app_id not in combined:
+                    combined[app_id] = game
+
+    games_list = list(combined.values())
+    logger.info(f"{len(games_list)} games loaded from SteamSpy.")
+    return games_list    
 
 def sync_games(conn, api_key, MAX_PAGE):
     """ GAMES """
@@ -63,7 +97,7 @@ def sync_games(conn, api_key, MAX_PAGE):
     for app_id in app_ids:
         try:
             # appdetails
-            details = get_appdetails(app_id)
+            details = get_app_details(app_id)
             if details:
                 loader.save_raw_response(conn, "appdetails", {"appids": app_id}, details)
                 game_row = transform_game_details(app_id, details)
@@ -103,7 +137,7 @@ def sync_users(conn, api_key, SEED_FILE):
             logger.info(f"Syncing user {steam_id}...")
 
             # a. Profile
-            raw_summary = get_player_summary(api_key, steam_id)
+            raw_summary = get_player_summaries(api_key, steam_id)
             loader.save_raw_response(conn, "GetPlayerSummaries", {"steamid": steam_id}, raw_summary)
 
             players = raw_summary.get("response", {}).get("players", [])
@@ -126,7 +160,7 @@ def sync_users(conn, api_key, SEED_FILE):
             for game in user_games_rows:
                 app_id = game["app_id"]
                 try:
-                    raw_ach = get_player_achievements(api_key, steam_id, app_id)
+                    raw_ach = get_top_achievements(api_key, steam_id, app_id)
                     loader.save_raw_response(conn, "GetPlayerAchievements", {"appid": app_id}, raw_ach)
 
                     ach_rows = transform_user_achievements(raw_ach, steam_id, app_id)
