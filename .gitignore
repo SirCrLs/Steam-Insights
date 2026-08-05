@@ -76,3 +76,4 @@ seed_steam_ids.txt
 # Exclude steamspy downloaded json
 *steamspy*.json
 merged_output.json
+page_*.json
