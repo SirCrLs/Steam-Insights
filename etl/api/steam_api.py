@@ -235,31 +235,56 @@ def get_friend_list(api_key, steam_id):
         
     return []
 
-def generate_steam_seed_ids(api_key, starting_steam_id, max_ids=300, output_file="data/seed_steam_ids.txt"):
-    """ Gathers ids until max_ids from initial Steam ID using GetFriendList. """
-    collected_ids = set()
-    queue = [str(starting_steam_id)]
+def generate_steam_seed_ids(api_key, starting_steam_ids: list, 
+max_ids=100, output_file: str = os.path.join("..", "data", "seed_steam_ids.txt")):
+    """ Gathers ids until max_ids from a list of initial Steam IDs using GetFriendList. """
+
+    existing_ids = set()
+    if os.path.exists(output_file):
+        try:
+            with open(output_file, "r", encoding="utf-8") as f:
+                existing_ids = set(linea.strip() for linea in f if linea.strip())
+            logger.info(f"File found. Loaded {len(existing_ids)} IDs.")
+            
+            if len(existing_ids) >= max_ids:
+                logger.warning(f"File exceded the limit of {max_ids} IDs.")
+                return list(existing_ids)[:max_ids]
+        except IOError as e:
+            logger.warning(f"Error while reading file: {e}")
+
+    collected_ids = set(str(sid) for sid in starting_steam_ids)
+    queue = list(collected_ids)
+
+    if len(collected_ids) >= max_ids:
+        collected_ids = set(list(collected_ids)[:max_ids])
+        queue = []
 
     while queue and len(collected_ids) < max_ids:
         current_id = queue.pop(0)
-        
+
+        logger.info(f"fetching {current_id} friend list.")
         friends_found = get_friend_list(api_key, current_id)
         
         for friend_id in friends_found:
-            if friend_id not in collected_ids:
-                collected_ids.add(friend_id)
-                queue.append(friend_id)
+            friend_id_str = str(friend_id.get("steamid"))
+            if friend_id_str not in collected_ids:
+                collected_ids.add(friend_id_str)
+                queue.append(friend_id_str)
 
                 if len(collected_ids) >= max_ids:
                     break
                     
         time.sleep(0.1)
         
-    with open(output_file, "w", encoding="utf-8") as f:
-        for steam_id in list(collected_ids)[:max_ids]:
-            f.write(f"{steam_id}\n")
+    try:
+        os.makedirs(os.path.dirname(output_file), exist_ok=True)
+        with open(output_file, "w", encoding="utf-8") as f:
+            for steam_id in collected_ids:
+                f.write(f"{steam_id}\n")
+    except IOError as e:
+        print(f"Error writing: {e}")
             
-    print(f"Finished. storaged {len(collected_ids)} IDs on '{output_file}'.")
+    print(f"Finished. Stored {len(collected_ids)} IDs on '{output_file}'.")
     return list(collected_ids)
 
 # STEAMSPY FUNCTIONS
