@@ -8,6 +8,7 @@ import time
 import requests
 import json
 import re
+import os
 
 logger = logging.getLogger(__name__)
 
@@ -278,6 +279,38 @@ def steamspy_get_all_games(max_page : int):
     steamspypi.download_all_pages(max_page)
     move_json_to_folder()
     return 
+
+def steamspy_download_all_pages_resumable(max_page: int, output_folder: str = os.path.join("..", "data")):
+    """
+    Downloads SteamSpy pages one at a time, skipping pages already saved to disk.
+    """
+    os.makedirs(output_folder, exist_ok=True)
+
+    for page in range(max_page):
+        output_path = os.path.join(output_folder, f"page_{page}.json")
+
+        if os.path.exists(output_path):
+            logger.info(f"Page {page} already downloaded, skipping.")
+            continue
+
+        logger.info(f"Fetching page {page} from SteamSpy...")
+        try:
+            data = steamspy_get_game_details(page=str(page))
+
+            with open(output_path, "w", encoding="utf-8") as f:
+                json.dump(data, f)
+
+            logger.info(f"Saved page {page} with {len(data)} games.")
+
+        except Exception as e:
+            logger.error(f"Failed to fetch page {page}: {e}")
+            logger.info(f"Stopping. Resume later — pages 0-{page - 1} are saved.")
+            raise
+
+        if page < max_page - 1:
+            logger.info("Waiting 70 seconds before next page (SteamSpy rate limit)...")
+            print(f"Downloaded page {page}. sleeping 70 sec")
+            time.sleep(70)
 
 # ====
 # Data cleaning and transformation functions
