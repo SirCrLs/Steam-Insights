@@ -25,38 +25,30 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+def load_games(MAX_PAGE : int):
+    try:
+        with open("data/merged_output.json", "r", encoding="utf-8") as file:
+            steamspy_games = json.load(file)
+        logger.info("Successfully loaded data from merged_output.json")
+    except (FileNotFoundError, json.JSONDecodeError) as file_error:
+        logger.error(f"Could not read merged_output.json: {file_error}")
+        logger.info(f"Fetching top {MAX_PAGE * 1000} games from SteamSpy...")
+        try:
+            steamspy_get_all_games(MAX_PAGE)
+            steamspy_games = read_various_jsons("data", "data/merged_output.json")
+        except Exception as api_error:
+            logger.error(f"Live API backup also failed: {api_error}")
+            return None
 
+    logger.info(f"{len(steamspy_games)} games loaded from SteamSpy.")
+    return steamspy_games    
 
 def sync_games(conn, api_key, MAX_PAGE):
     """ GAMES """
 
     # 1. Download game list JSON
-    logger.info("Fetching currently most-played games...")
-    current_players_games = get_games_by_current_players(api_key)
-
-    # Try reading, if not then downloading it
-    try:
-        with open("data/merged_output.json", "r", encoding="utf-8") as file:
-            steamspy_games = json.load(file)
-        logger.info("Successfully loaded data from merged_output.json")        
-    except (FileNotFoundError, json.JSONDecodeError) as file_error:
-        logger.error(f"Could not read merged_output.json: {file_error}")
-        logger.info(f"Fetching top {MAX_PAGE * 1000} games from SteamSpy...")
-        try:
-            steamspy_get_all_games(MAX_PAGE) # Downloads jsons
-            steamspy_games = read_various_jsons("data", "data/merged_output.json")
-        except Exception as api_error:
-            logger.error(f"Live API backup also failed: {api_error}")
-            return
-
-    combined = {}
-    for game in steamspy_games + current_players_games:
-        app_id = game["appid"]
-        if app_id not in combined:
-            combined[app_id] = game
-
-    games_list = list(combined.values())
-    logger.info(f"{len(games_list)} unique games after merging both sources.")
+    logger.info("Fetching games...")
+    games_list = load_games(MAX_PAGE)
 
     # 2. Insert game list into the database (app_id + name)
     game_stub_rows = transform_game_stubs(games_list)
