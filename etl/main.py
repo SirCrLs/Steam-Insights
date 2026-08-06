@@ -18,7 +18,7 @@ def main():
         sync_games(conn, api_key, MAX_PAGE)
 
         print("\n=== 2. Syncing users ===")
-        sync_users(conn, api_key, SEED_FILE)
+        sync_users(conn, api_key)
 
     except Exception as e:
         conn.rollback()
