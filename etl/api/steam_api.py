@@ -12,7 +12,6 @@ import os
 
 logger = logging.getLogger(__name__)
 
-
 def _make_request(url: str, api_key: str = None, input_params: Optional[dict] = None):
     """Internal function to perform HTTP GET requests."""
     if api_key is not None:
@@ -235,29 +234,27 @@ def get_friend_list(api_key, steam_id):
         
     return []
 
-def generate_steam_seed_ids(api_key, starting_steam_ids: list, 
-max_ids=100, output_file: str = os.path.join("..", "data", "seed_steam_ids.txt")):
-    """ Gathers ids until max_ids from a list of initial Steam IDs using GetFriendList. """
+def generate_steam_seed_ids(api_key, max_ids=100, output_file: str = os.path.join("..", "data", "seed_steam_ids.txt")):
+    """ Gathers ids until max_ids using Steam IDs read from the output file. """
 
-    existing_ids = set()
+    collected_ids = set()
     if os.path.exists(output_file):
         try:
             with open(output_file, "r", encoding="utf-8") as f:
-                existing_ids = set(linea.strip() for linea in f if linea.strip())
-            logger.info(f"File found. Loaded {len(existing_ids)} IDs.")
+                collected_ids = set(linea.strip() for linea in f if linea.strip())
+            logger.info(f"File found. Loaded {len(collected_ids)} IDs.")
             
-            if len(existing_ids) >= max_ids:
-                logger.warning(f"File exceded the limit of {max_ids} IDs.")
-                return list(existing_ids)[:max_ids]
+            if len(collected_ids) >= max_ids:
+                logger.warning(f"File exceeded the limit of {max_ids} IDs.")
+                return list(collected_ids)[:max_ids]
         except IOError as e:
             logger.warning(f"Error while reading file: {e}")
 
-    collected_ids = set(str(sid) for sid in starting_steam_ids)
+    if not collected_ids:
+        logger.error("No initial Steam IDs found in the file. Cannot proceed.")
+        return []
+    
     queue = list(collected_ids)
-
-    if len(collected_ids) >= max_ids:
-        collected_ids = set(list(collected_ids)[:max_ids])
-        queue = []
 
     while queue and len(collected_ids) < max_ids:
         current_id = queue.pop(0)
@@ -492,6 +489,17 @@ def read_various_jsons(directory_path: str = "data", output_file_name: str = "da
             
     download_json(combined_data, output_file_name)
     return combined_data
+
+def save_checkpoint(page: int) -> None:
+    """
+    Updates the checkpoint file to record the last page successfully 
+    inserted into the database.
+    """
+    CHECKPOINT_PATH = os.path.join("..", "data", "steamspy_checkpoint.json")
+
+    with open(CHECKPOINT_PATH, "w", encoding="utf-8") as f:
+        json.dump({"last_page": page}, f)
+    logger.info(f"Checkpoint updated: last completed page = {page}")
 
 # ===
 # Transform functions

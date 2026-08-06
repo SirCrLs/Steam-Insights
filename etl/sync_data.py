@@ -1,4 +1,3 @@
-from api.steam_api import read_various_jsons
 from api.steam_api import (
     steamspy_download_all_pages_resumable,
     get_app_details,
@@ -11,7 +10,9 @@ from api.steam_api import (
     transform_achievements,
     transform_user,
     transform_owned_games,
-    transform_user_achievements
+    transform_user_achievements,
+    save_checkpoint,
+    generate_steam_seed_ids
 )
 import logging
 import glob
@@ -89,6 +90,7 @@ def sync_games(conn, api_key, MAX_PAGE):
     loader.upsert_game_stubs(conn, game_stub_rows)
     conn.commit()
     logger.info(f"{len(game_stub_rows)} games inserted/updated in the database.")
+    save_checkpoint(MAX_PAGE)
 
     # 3. For each game already in the database, enrich with details + achievements
     app_ids = loader.get_all_app_ids(conn)
@@ -117,17 +119,11 @@ def sync_games(conn, api_key, MAX_PAGE):
     logger.info("Games sync completed.")
 
 
-def sync_users(conn, api_key, SEED_FILE: str = os.path.join("..", "data", "seed_steam_ids.txt")):
+def sync_users(conn, api_key, MAX_USERS:int = 300):
     """ USERS """
+    SEED_FILE: str = os.path.join("..", "data", "seed_steam_ids.txt")
 
-    # 1. Get seed SteamIDs from a .txt file
-    if not os.path.exists(SEED_FILE):
-        logger.warning(f"{SEED_FILE} not found, skipping user sync.")
-        return
-
-    with open(SEED_FILE, "r") as f:
-        steam_ids = [line.strip() for line in f if line.strip()]
-
+    steam_ids = generate_steam_seed_ids(api_key,MAX_USERS)
     logger.info(f"{len(steam_ids)} SteamIDs loaded from {SEED_FILE}.")
 
     valid_app_ids = loader.get_all_app_ids(conn)
