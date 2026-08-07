@@ -252,7 +252,7 @@ def generate_steam_seed_ids(api_key, max_ids=100, output_file: str = os.path.joi
 
     if not collected_ids:
         logger.error("No initial Steam IDs found in the file. Cannot proceed.")
-        return []
+        return None
     
     queue = list(collected_ids)
 
@@ -431,6 +431,16 @@ def parse_requirements(raw_html):
         "storage_gb": storage_gb,
     }
 
+def clean_summaries(api_key, user_list, max_users = 300):
+    chunk_size = 100
+    summaries = []
+    for i in range(0, len(user_list), chunk_size):
+        chunk = user_list[i:i + chunk_size]
+
+        response = get_player_summaries(api_key, chunk)
+        players = response.get("response", {}).get("players", [])
+        summaries.extend(players)
+    return summaries
 
 def string_to_date(fecha_str: str):
     try:
@@ -572,43 +582,35 @@ def transform_achievements(app_id, schema_response):
     return rows
 
 
-def transform_user(raw_summary):
-    """ maps GetPlayerSummaries to a users row. """
-    players = raw_summary.get("response", {}).get("players", [])
-    if not players:
-        raise ValueError("No player data in GetPlayerSummaries response.")
-
-    player = players[0]
+def transform_user(player):
+    """ Mapea un diccionario individual de jugador a la estructura de la BD. """
+    if not player:
+        raise ValueError("No player data provided.")
 
     return {
         "steam_id": int(player["steamid"]),
         "persona_name": player.get("personaname"),
-        "profile_url": player.get("profileurl"),
-        "country_code": player.get("loccountrycode"),
-        "account_created": player.get("timecreated"),  
+        "profile_url": player.get("profileurl", None),
+        "avatar_url" : player.get("avatarfull", None),
+        "country_code": player.get("loccountrycode", None),
+        "account_created": player.get("timecreated", None),  
         "is_public": player.get("communityvisibilitystate") == 3,
     }
 
 
-def transform_owned_games(raw_games, valid_app_ids):
+def transform_owned_games(games, user):
     """ maps GetOwnedGames to user_games rows """
-    games = raw_games.get("response", {}).get("games", [])
     rows = []
-    skipped = 0
-
     for game in games:
-        app_id = game["appid"]
-        if app_id not in valid_app_ids:
-            skipped += 1
-            continue
 
         rows.append({
-            "app_id": app_id,
+            "steam_id" : user,
+            "app_id": game.get("app_id"),
             "playtime_forever_minutes": game.get("playtime_forever", 0),
             "playtime_2weeks_minutes": game.get("playtime_2weeks", 0),
         })
 
-    return rows, skipped
+    return rows
 
 
 def transform_user_achievements(raw_achievements, steam_id, app_id):
