@@ -1,8 +1,9 @@
+from api.steam_api import clean_summaries
 from api.steam_api import (
     steamspy_download_all_pages_resumable,
     get_app_details,
     get_synced_game_achievements,
-    get_player_summaries,
+    clean_summaries,
     get_owned_games,
     get_top_achievements,
     transform_game_stubs,
@@ -18,7 +19,7 @@ import logging
 import glob
 import json
 import os
-import load as loader
+import loader
 
 logging.basicConfig(
     level=logging.INFO,
@@ -78,77 +79,124 @@ def load_games(max_page: int, output_folder: str = os.path.join("..", "data")):
     logger.info(f"{len(games_list)} games loaded from SteamSpy.")
     return games_list    
 
-def sync_games(conn, api_key, MAX_PAGE):
+def load_user_games_and_achievements(conn, api_key, steam_id):
+    """Loads and transform user games and achievements"""
+    logger.info(f"Syncing user {steam_id}...")
+
+    # b. Owned games 
+    games = get_owned_games(api_key, steam_id).get("response").get("games")
+
+    user_games_rows = transform_owned_games(games, steam_id)
+    loader.upsert_user_games(conn, steam_id, user_games_rows)
+    logger.info(f"{len(user_games_rows)} games kept for user {steam_id}.")
+
+    # c. Achievements per owned game
+    for game in user_games_rows:
+        app_id = game["app_id"]
+        try:
+            raw_ach = get_top_achievements(api_key, steam_id, app_id)
+            loader.save_raw_response(conn, "GetPlayerAchievements", {"appid": app_id}, raw_ach)
+
+            ach_rows = transform_user_achievements(raw_ach, steam_id, app_id)
+            loader.upsert_user_achievements(conn, ach_rows)
+
+        except Exception as e:
+            logger.debug(f"No achievements for user={steam_id}, app_id={app_id}: {e}")
+            continue
+
+    conn.commit()
+
+def sync_games(conn, api_key, MAX_PAGE, BATCH_SIZE: int = 100):
     """ GAMES """
 
-    # 1. Download game list JSON
     logger.info("Fetching games...")
     games_list = load_games(MAX_PAGE)
 
-    # 2. Insert game list into the database (app_id + name)
     game_stub_rows = transform_game_stubs(games_list)
     loader.upsert_game_stubs(conn, game_stub_rows)
     conn.commit()
     logger.info(f"{len(game_stub_rows)} games inserted/updated in the database.")
     save_checkpoint(MAX_PAGE)
 
-    # 3. For each game already in the database, enrich with details + achievements
     app_ids = loader.get_all_app_ids(conn)
     logger.info(f"Enriching {len(app_ids)} games with appdetails and achievements...")
 
-    for app_id in app_ids:
+    games_batch = []
+    achievements_batch = []
+
+    for i, app_id in enumerate(app_ids, start=1):
         try:
-            # appdetails
+            # Details
             details = get_app_details(app_id)
             if details:
-                loader.save_raw_response(conn, "appdetails", {"appids": app_id}, details)
                 game_row = transform_game_details(app_id, details)
-                loader.upsert_game(conn, game_row)
+                if game_row:
+                    games_batch.append(game_row)
 
-            # achievement schema
-            achievements = get_synced_game_achievements(api_key,app_id)
+            # Scheme achievements
+            achievements = get_synced_game_achievements(api_key, app_id)
             if achievements:
                 achievement_rows = transform_achievements(app_id, achievements)
-                loader.upsert_achievements(conn, achievement_rows)
+                if achievement_rows:
+                    achievements_batch.extend(achievement_rows)
 
         except Exception as e:
-            logger.warning(f"Error enriching app_id={app_id}: {e}")
+            logger.warning(f"Error fetching data for app_id={app_id}: {e}")
             continue
 
-    conn.commit()
-    logger.info("Games sync completed.")
+        # Saving the batch
+        if i % BATCH_SIZE == 0 or i == len(app_ids):
+            try:
+                if games_batch:
+                    loader.upsert_games_batch(conn, games_batch)
+                    
+                if achievements_batch:
+                    loader.upsert_achievements_batch(conn, achievements_batch)
 
+                conn.commit()
+                logger.info(f"Batch saved: {i}/{len(app_ids)} games processed.")
+
+                # Limpiamos las listas para el siguiente lote
+                games_batch.clear()
+                achievements_batch.clear()
+
+            except Exception as e:
+                conn.rollback()
+                logger.error(f"Error saving batch at index {i}: {e}")
+                games_batch.clear()
+                achievements_batch.clear()
+
+    logger.info("Games sync completed.")
 
 def sync_users(conn, api_key, MAX_USERS:int = 300):
     """ USERS """
     SEED_FILE: str = os.path.join("..", "data", "seed_steam_ids.txt")
 
     steam_ids = generate_steam_seed_ids(api_key,MAX_USERS)
+
+    if steam_ids == None:
+        logger.error(f"SteamIDs could not be loaded from {SEED_FILE}.")
+        return
+
     logger.info(f"{len(steam_ids)} SteamIDs loaded from {SEED_FILE}.")
 
-    valid_app_ids = loader.get_all_app_ids(conn)
+    summaries = clean_summaries(api_key,steam_ids,MAX_USERS)
+    logger.info(f"{len(summaries)} summaries loaded.")
+
+    user_rows = [transform_user(player) for player in summaries]
+    loader.upsert_users_batch(conn, user_rows)
+    logger.info(f"{len(user_rows)} users saved into the database.")
+    conn.commit()
 
     for steam_id in steam_ids:
         try:
             logger.info(f"Syncing user {steam_id}...")
 
-            # a. Profile
-            raw_summary = get_player_summaries(api_key, steam_id)
-            loader.save_raw_response(conn, "GetPlayerSummaries", {"steamid": steam_id}, raw_summary)
-
-            players = raw_summary.get("response", {}).get("players", [])
-            if not players:
-                logger.warning(f"No profile found for {steam_id}, skipping.")
-                continue
-
-            user_row = transform_user(raw_summary)
-            loader.upsert_user(conn, user_row)
-
-            # b. Owned games (skip games not in db)
+            # b. Owned games 
             raw_games = get_owned_games(api_key, steam_id)
             loader.save_raw_response(conn, "GetOwnedGames", {"steamid": steam_id}, raw_games)
 
-            user_games_rows = transform_owned_games(raw_games, valid_app_ids)
+            user_games_rows = transform_owned_games(raw_games)
             loader.upsert_user_games(conn, steam_id, user_games_rows)
             logger.info(f"{len(user_games_rows)} games kept for user {steam_id}.")
 
