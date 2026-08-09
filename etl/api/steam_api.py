@@ -612,23 +612,60 @@ def transform_owned_games(games, user):
 
     return rows
 
+def fetch_achievement_keys_mapping(cursor, app_ids):
+    """
+    Obtains from a single query (app_id, display_name) -> achievement_key
+    """
+    if not app_ids:
+        return {}
 
-def transform_user_achievements(raw_achievements, steam_id, app_id):
-    """ maps GetPlayerAchievements to user_achievements rows. """
-    playerstats = raw_achievements.get("playerstats", {})
-    if not playerstats.get("success"):
+    query = """
+        SELECT app_id, display_name, achievement_key 
+        FROM achievements 
+        WHERE app_id = ANY(%s);
+    """
+    cursor.execute(query, (list(app_ids),))
+    rows = cursor.fetchall()
+
+    return {(row["app_id"], row["display_name"]): row["achievement_key"] for row in rows}
+
+def transform_user_achievements(raw_achievements_list, steam_id, db_cursor):
+    """
+    Transforms users achievements
+    """
+    valid_games = []
+    valid_app_ids = set()
+
+    for game_data in raw_achievements_list:
+        achievements = game_data.get("achievements")
+        
+        if achievements and game_data.get("appid"):
+            valid_games.append(game_data)
+            valid_app_ids.add(game_data.get("appid"))
+
+    if not valid_app_ids:
         return []
 
-    achievements = playerstats.get("achievements", [])
-    rows = []
+    schema_mapping = fetch_achievement_keys_mapping(db_cursor, valid_app_ids)
+    all_rows = []
 
-    for ach in achievements:
-        rows.append({
-            "steam_id": steam_id,
-            "app_id": app_id,
-            "achievement_key": ach.get("apiname"),
-            "unlocked": bool(ach.get("achieved")),
-            "unlock_time": ach.get("unlocktime") or None, 
-        })
+    for game_data in valid_games:
+        app_id = game_data.get("appid")
+        achievements = game_data.get("achievements", [])
 
-    return rows
+        for ach in achievements:
+            display_name = ach.get("name")
+                
+            # Búsqueda instantánea en el mapeo cargado previamente
+            achievement_key = schema_mapping.get((app_id, display_name))
+
+            all_rows.append({
+                "steam_id": steam_id,
+                "app_id": app_id,
+                "achievement_key": achievement_key,
+                "display_name": display_name,
+                "unlocked": True,
+                "unlock_time": ach.get("unlocktime") or None,
+            })
+
+    return all_rows
