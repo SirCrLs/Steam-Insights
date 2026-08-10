@@ -106,7 +106,7 @@ def load_user_games_and_achievements(conn, api_key, steam_id):
 
     conn.commit()
 
-def sync_games(conn, api_key, MAX_PAGE, BATCH_SIZE: int = 100):
+def sync_games(conn, api_key, MAX_PAGE : int, BATCH_SIZE: int = 100):
     """ GAMES """
 
     logger.info("Fetching games...")
@@ -210,7 +210,7 @@ def sync_users(conn, api_key, MAX_USERS:int = 300, BATCH_SIZE: int = 100):
 
                 # Achievements per owned game
                 achievements = get_top_achievements(api_key, steam_id, game_ids)
-                if achievements: # TO DO: CHANGE TRANSFORM USER ACHIEVEMENTS FUNCTION
+                if achievements: 
                     ach_rows = transform_user_achievements(achievements, steam_id, game_ids)
                     user_achievements_batch.extend(ach_rows)
 

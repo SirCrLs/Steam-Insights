@@ -1,12 +1,5 @@
 requests
 python-dotenv
 steamspypi
-logging
-json
-re
-typing
-datetime
-os
-time
-glob
-shutil
+db
+psycopg2
