@@ -196,8 +196,8 @@ def upsert_users_batch(conn, user_rows):
     with conn.cursor() as cursor:
         execute_batch(cursor, query, user_rows, page_size=500)
 
-def upsert_user_games(conn, steam_id, user_games_rows):
-    """Inserta o actualiza los juegos de un usuario en lote."""
+def upsert_user_games_batch(conn, user_games_rows):
+    """Inserts user games in a batch"""
     if not user_games_rows:
         return
 
@@ -218,19 +218,30 @@ def upsert_user_games(conn, steam_id, user_games_rows):
             playtime_forever = EXCLUDED.playtime_forever,
             playtime_2weeks = EXCLUDED.playtime_2weeks;
     """
-
     with conn.cursor() as cursor:
         execute_batch(cursor, query, user_games_rows, page_size=500)
 
-def upsert_user_achievements(conn, ach_rows):
-    """Inserta o actualiza los logros en lote."""
+def upsert_user_achievements_batch(conn, ach_rows):
+    """Inserts user achievements in a batch"""
     if not ach_rows:
         return
 
     query = """
-        INSERT INTO user_achievements (steam_id, app_id, achievement_name, unlocked)
-        VALUES (%(steam_id)s, %(app_id)s, %(achievement_name)s, %(unlocked)s)
-        ON CONFLICT (steam_id, app_id, achievement_name) DO UPDATE;
+        INSERT INTO user_achievements (
+            steam_id, 
+            app_id, 
+            achievement_key, 
+            display_name,
+
+        )
+        VALUES (
+            %(steam_id)s, 
+            %(app_id)s, 
+            %(achievement_key)s, 
+            %(display_name)s
+        )
+        ON CONFLICT (steam_id, app_id, achievement_key) DO UPDATE SET
+            display_name = EXCLUDED.display_name,
     """
     with conn.cursor() as cursor:
         execute_batch(cursor, query, ach_rows, page_size=500)

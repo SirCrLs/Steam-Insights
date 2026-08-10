@@ -5,8 +5,9 @@ import os
 
 """ VARIABLES """
 
-MAX_PAGE = 3  # SteamSpy: each page is 1000 games
-SEED_FILE = "seed_steam_ids.txt"
+MAX_PAGE = 1  # SteamSpy: each page is 1000 games
+MAX_USERS = 100
+BATCH_SIZE = 100
 
 def main():
     load_dotenv()
@@ -14,11 +15,11 @@ def main():
     conn = get_connection()
 
     try:
-        print("\n=== 1. Syncing games catalog ===")
-        sync_games(conn, api_key, MAX_PAGE)
+        logger.info(f"=== 1. Syncing games ===")
+        sync_games(conn, api_key, MAX_PAGE, BATCH_SIZE)
 
-        print("\n=== 2. Syncing users ===")
-        sync_users(conn, api_key)
+        logger.info(f"=== 2. Syncing users ===")
+        sync_users(conn, api_key, MAX_USERS, BATCH_SIZE)
 
     except Exception as e:
         conn.rollback()

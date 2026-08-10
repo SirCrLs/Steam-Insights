@@ -656,7 +656,6 @@ def transform_user_achievements(raw_achievements_list, steam_id, db_cursor):
         for ach in achievements:
             display_name = ach.get("name")
                 
-            # Búsqueda instantánea en el mapeo cargado previamente
             achievement_key = schema_mapping.get((app_id, display_name))
 
             all_rows.append({
