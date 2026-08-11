@@ -1,6 +1,6 @@
 from sync_data import sync_games, sync_users, logger
 from dotenv import load_dotenv
-from db import get_connection
+from loader import get_connection
 import os
 
 """ VARIABLES """
