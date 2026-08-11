@@ -27,8 +27,9 @@ CREATE TABLE games (
     release_date DATE,
     price_usd NUMERIC(10,2),
     is_free BOOLEAN,
-    rating SMALLINT,
+    rating TEXT,
     total_achievements SMALLINT,
+    recommendations INTEGER,
 
     -- (SteamSpy metrics)
     owners_min BIGINT,

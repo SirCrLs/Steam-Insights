@@ -136,7 +136,10 @@ def get_steam_level_distribution(api_key: str, level: int):
 
 def get_synced_game_achievements(api_key, appid):
     """Synchronizes achievements from game schema and achievement percentages."""  
-    achievements = get_schema_for_game(api_key, appid)["game"]["availableGameStats"]["achievements"]
+    raw_response = get_schema_for_game(api_key, appid)
+    achievements = raw_response.get("game", {}).get("availableGameStats",{}).get("achievements", None)
+    if not achievements:
+        return None
     achievements_percent = get_global_achievement_percentages(appid)["achievementpercentages"]["achievements"]
 
     percentage_dict = {item["name"]: item["percent"] for item in achievements_percent}
@@ -387,8 +390,8 @@ def clean_app_details(r: dict, app_id: int):
         min_raw = pc_reqs.get("minimum", "")
         rec_raw = pc_reqs.get("recommended", "")
 
-        pc_reqs["minimum_specs"] = parse_requirements(min_raw) if min_raw else None
-        pc_reqs["recommended_specs"] = parse_requirements(rec_raw) if rec_raw else None
+        pc_reqs["minimum_specs"] = parse_requirements(min_raw) if min_raw else {}
+        pc_reqs["recommended_specs"] = parse_requirements(rec_raw) if rec_raw else {}
         pc_reqs["minimum"] = remove_html_tags(min_raw) if min_raw else None
         pc_reqs["recommended"] = remove_html_tags(rec_raw) if rec_raw else None
     else:
@@ -417,9 +420,16 @@ def clean_app_details(r: dict, app_id: int):
 
     ratings = data.get("ratings")
     if isinstance(ratings, dict) and ratings:
-        data["ratings"] = next(iter(ratings.values()), None)
+        first_val = next(iter(ratings.values()), None)
+        if isinstance(first_val, dict):
+            first_val = first_val.get("rating") or first_val.get("descriptors")
+        
+        data["ratings"] = str(first_val) if first_val is not None else None
     else:
         data["ratings"] = None
+
+    recommendations = data.get("recommendations",{}).get("total", None)
+    data["recommendations"] = recommendations
 
     return data
 
@@ -666,11 +676,16 @@ def transform_game_details(app_id, data):
     if not data:
         return None
 
-    specs_min = data.get("pc_requirements").get("minimum_specs")
-    specs_rec = data.get("pc_requirements").get("recommended_specs")
-    platforms = data.get("platforms")
-    release_date = data.get("release_date").get("date")
+    specs_min = data.get("pc_requirements", {}).get("minimum_specs", {})
+    specs_rec = data.get("pc_requirements", {}).get("recommended_specs", {})
+    platforms = data.get("platforms", {})
+    release_date = data.get("release_date", {}).get("date")
 
+    get_positive = lambda d: max(
+        (d.get("recommendations", {}).get("total", 0) 
+            if isinstance(d.get("recommendations"), dict) else d.get("recommendations", 0)) or 0,
+        (d.get("positive", 0)) or 0
+    )
     # Return
     return {
         "app_id": int(app_id),
@@ -684,21 +699,23 @@ def transform_game_details(app_id, data):
         "pc_requirements_recommended": data.get("pc_requirements").get("recommended"),
         
         # Index [0] = minimum, [1] = recommended
-        "processor": [specs_min.get("processor"), specs_rec.get("processor")], 
-        "graphics": [specs_min.get("graphics"), specs_rec.get("graphics")],                     
-        "ram_requirement": [specs_min.get("memory_gb"), specs_rec.get("memory_gb")],      
-        "storage_requirement": [specs_min.get("storage_gb"), specs_rec.get("storage_gb")], 
+        "processor": [specs_min.get("processor", None), specs_rec.get("processor", None)], 
+        "graphics": [specs_min.get("graphics", None), specs_rec.get("graphics", None)],                     
+        "ram_requirement": [specs_min.get("memory_gb", None), specs_rec.get("memory_gb", None)],      
+        "storage_requirement": [specs_min.get("storage_gb", None), specs_rec.get("storage_gb", None)], 
         
-        "developers": data.get("developers"),
+        "developers": data.get("developers", None),
         "is_on_windows": platforms.get("windows", False),
         "is_on_mac": platforms.get("mac", False),
         "is_on_linux": platforms.get("linux", False),
-        "metacritic_score": data.get("metacritic"), # SMALLINT
+        "metacritic_score": data.get("metacritic", None), # SMALLINT
         "release_date": release_date,
         "price_usd": data.get("price_overview", 0),
         "is_free": data.get("is_free", False),
-        "rating": data.get("ratings").get("rating", None), 
+        "rating": data.get("ratings", None), 
         "total_achievements": data.get("achievements", {}).get("total", 0),
+        "recommendations": data.get("recommendations"),
+
         "fetched_at": datetime.now()
     }
 
