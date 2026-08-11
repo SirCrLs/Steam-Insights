@@ -126,6 +126,7 @@ def upsert_games_batch(conn, games_batch, page_size=100):
             is_free,
             rating,
             total_achievements,
+            recommendations,
             fetched_at
         )
         VALUES (
@@ -152,6 +153,7 @@ def upsert_games_batch(conn, games_batch, page_size=100):
             %(is_free)s,
             %(rating)s,
             %(total_achievements)s,
+            %(recommendations)s,
             %(fetched_at)s
         )
         ON CONFLICT (app_id) DO UPDATE SET
@@ -177,6 +179,7 @@ def upsert_games_batch(conn, games_batch, page_size=100):
             is_free = EXCLUDED.is_free,
             rating = EXCLUDED.rating,
             total_achievements = EXCLUDED.total_achievements,
+            recommendations = EXCLUDED.recommendations,
             fetched_at = EXCLUDED.fetched_at;
     """
 
