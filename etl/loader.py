@@ -1,4 +1,34 @@
+import os
+import time
+import logging
+import psycopg2
 from psycopg2.extras import execute_batch
+
+logger = logging.getLogger(__name__)
+
+def get_connection(retries: int = 5, delay: int = 2):
+    """
+    Creates and returns a connection to the data base PostgreSQL 
+    """
+    host = os.environ.get("DB_HOST", "postgres")
+    port = os.environ.get("DB_PORT", "5432")
+    dbname = os.environ.get("POSTGRES_DB", "steam_db")
+    user = os.environ.get("POSTGRES_USER", "postgres")
+    password = os.environ.get("POSTGRES_PASSWORD", "")
+
+    connection_string = f"host={host} port={port} dbname={dbname} user={user} password={password}"
+
+    for attempt in range(1, retries + 1):
+        try:
+            conn = psycopg2.connect(connection_string, connect_timeout=10)
+            logger.info(f"Connection succesfull ({host}:{port}/{dbname})")
+            return conn
+        except psycopg2.OperationalError as e:
+            logger.warning(f"Attempt {attempt}/{retries} failed to connect to PostgreSQL: {e}")
+            if attempt == retries:
+                logger.error("Connection to DB failed.")
+                raise e
+            time.sleep(delay)
 
 def upsert_game_stubs(conn, game_stub_rows, page_size=1000):
     """
