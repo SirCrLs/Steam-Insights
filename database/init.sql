@@ -29,6 +29,14 @@ CREATE TABLE games (
     is_free BOOLEAN,
     rating SMALLINT,
     total_achievements SMALLINT,
+
+    -- (SteamSpy metrics)
+    owners_min BIGINT,
+    owners_max BIGINT,
+    positive_reviews INTEGER,
+    negative_reviews INTEGER,
+    total_reviews INTEGER,
+    approval_rate NUMERIC(5,2),
     fetched_at TIMESTAMP DEFAULT now()
 );
 

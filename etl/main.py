@@ -5,7 +5,7 @@ import os
 
 """ VARIABLES """
 
-MAX_PAGE = 1  # SteamSpy: each page is 1000 games
+MAX_PAGE = 4  # SteamSpy: each page is 1000 games
 MAX_USERS = 100
 BATCH_SIZE = 10
 

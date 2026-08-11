@@ -13,6 +13,7 @@ from api.steam_api import (
     transform_owned_games,
     transform_user_achievements,
     save_checkpoint,
+    read_checkpoint,
     generate_steam_seed_ids
 )
 import logging
@@ -32,10 +33,16 @@ def load_games(max_page: int, output_folder: str = "data"):
     """
     Loads SteamSpy games by reading each page JSON file individually.
     """
+    checkpoint = read_checkpoint()
+    if checkpoint >= max_page:
+        logger.info(f"Checkpoint already meeted: checkpoint on page {checkpoint}")
+        return None
+
     combined = {}
     missing_pages = []
+    start_page = (checkpoint) if checkpoint > -1 else 0
 
-    for page in range(max_page):
+    for page in range(start_page, max_page):
         matches = glob.glob(os.path.join(output_folder, f"page_{page}.json"))
 
         if not matches:
@@ -78,7 +85,7 @@ def load_games(max_page: int, output_folder: str = "data"):
 
     games_list = list(combined.values())
     logger.info(f"{len(games_list)} games loaded from SteamSpy.")
-    return games_list    
+    return games_list  
 
 def load_user_games_and_achievements(conn, api_key, steam_id):
     """Loads and transform user games and achievements"""
@@ -113,11 +120,12 @@ def sync_games(conn, api_key, MAX_PAGE : int, BATCH_SIZE: int = 100):
     logger.info("Fetching games...")
     games_list = load_games(MAX_PAGE)
 
-    game_stub_rows = transform_game_stubs(games_list)
-    loader.upsert_game_stubs(conn, game_stub_rows)
-    conn.commit()
-    logger.info(f"{len(game_stub_rows)} games inserted/updated in the database.")
-    save_checkpoint(MAX_PAGE)
+    if games_list:
+        game_stub_rows = transform_game_stubs(games_list)
+        loader.upsert_game_stubs(conn, game_stub_rows)
+        conn.commit()
+        logger.info(f"{len(game_stub_rows)} games inserted/updated in the database.")
+        save_checkpoint(MAX_PAGE)
 
     app_ids = loader.get_all_app_ids(conn)
     logger.info(f"Enriching {len(app_ids)} games with appdetails and achievements...")
