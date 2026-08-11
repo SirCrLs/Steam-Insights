@@ -7,7 +7,7 @@ import os
 
 MAX_PAGE = 1  # SteamSpy: each page is 1000 games
 MAX_USERS = 100
-BATCH_SIZE = 100
+BATCH_SIZE = 10
 
 def main():
     load_dotenv()

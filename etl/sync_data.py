@@ -19,6 +19,7 @@ import logging
 import glob
 import json
 import os
+import time
 import loader
 
 logging.basicConfig(
@@ -27,7 +28,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-def load_games(max_page: int, output_folder: str = os.path.join("..", "data")):
+def load_games(max_page: int, output_folder: str = "data"):
     """
     Loads SteamSpy games by reading each page JSON file individually.
     """
@@ -139,10 +140,12 @@ def sync_games(conn, api_key, MAX_PAGE : int, BATCH_SIZE: int = 100):
                 achievement_rows = transform_achievements(app_id, achievements)
                 if achievement_rows:
                     achievements_batch.extend(achievement_rows)
-
+            
         except Exception as e:
             logger.warning(f"Error fetching data for app_id={app_id}: {e}")
             continue
+
+        time.sleep(2)
 
         # Saving the batch
         if i % BATCH_SIZE == 0 or i == len(app_ids):
