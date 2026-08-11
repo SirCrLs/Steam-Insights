@@ -32,16 +32,41 @@ def get_connection(retries: int = 5, delay: int = 2):
 
 def upsert_game_stubs(conn, game_stub_rows, page_size=1000):
     """
-    Inserts a batch of a basic list of games (app_id + name).
+    Inserts or updates a batch of basic game data (app_id, name, owners range, and review metrics).
     """
     if not game_stub_rows:
         return
 
     query = """
-        INSERT INTO games (app_id, name)
-        VALUES (%(app_id)s, %(name)s)
+        INSERT INTO games (
+            app_id, 
+            name, 
+            owners_min, 
+            owners_max, 
+            positive_reviews, 
+            negative_reviews, 
+            total_reviews, 
+            approval_rate
+        )
+        VALUES (
+            %(app_id)s, 
+            %(name)s, 
+            %(owners_min)s, 
+            %(owners_max)s, 
+            %(positive_reviews)s, 
+            %(negative_reviews)s, 
+            %(total_reviews)s, 
+            %(approval_rate)s
+        )
         ON CONFLICT (app_id) DO UPDATE SET
-            name = EXCLUDED.name;
+            name = EXCLUDED.name,
+            owners_min = EXCLUDED.owners_min,
+            owners_max = EXCLUDED.owners_max,
+            positive_reviews = EXCLUDED.positive_reviews,
+            negative_reviews = EXCLUDED.negative_reviews,
+            total_reviews = EXCLUDED.total_reviews,
+            approval_rate = EXCLUDED.approval_rate,
+            fetched_at = now();
     """
 
     with conn.cursor() as cursor:

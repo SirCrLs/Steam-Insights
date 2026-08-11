@@ -357,8 +357,7 @@ def steamspy_download_all_pages_resumable(max_page: int, output_folder: str = os
             raise
 
         if page < max_page - 1:
-            logger.info("Waiting 70 seconds before next page (SteamSpy rate limit)...")
-            print(f"Downloaded page {page}. sleeping 70 sec")
+            logger.info(f"Downloaded page {page}. sleeping 70 sec")
             time.sleep(70)
 
 # ====
@@ -394,8 +393,8 @@ def clean_app_details(r: dict, app_id: int):
         pc_reqs["recommended"] = remove_html_tags(rec_raw) if rec_raw else None
     else:
         data["pc_requirements"] = {
-            "minimum_specs": None,
-            "recommended_specs": None,
+            "minimum_specs": {},
+            "recommended_specs": {},
             "minimum": None,
             "recommended": None
         }
@@ -583,19 +582,83 @@ def save_checkpoint(page: int) -> None:
         json.dump({"last_page": page}, f)
     logger.info(f"Checkpoint updated: last completed page = {page}")
 
+def read_checkpoint() -> int:
+    """
+    Reads the checkpoint file to get the last page successfully processed.
+    """
+    CHECKPOINT_PATH = os.path.join("data", "steamspy_checkpoint.json")
+
+    if not os.path.exists(CHECKPOINT_PATH):
+        return -1
+
+    try:
+        with open(CHECKPOINT_PATH, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        page = data.get("last_page", -1)
+        return page
+
+    except (json.JSONDecodeError, KeyError) as e:
+        logger.error(f"Error reading checkpoint file ({CHECKPOINT_PATH}): {e}")
+        return -1
+
 # ===
 # Transform functions
 # ===
 
-def transform_game_stubs(games_list):
-    """ minimal rows (app_id + name) from the combined """
+def _parse_owners(owners_str: str) -> tuple[int, int]:
+    if not owners_str or not isinstance(owners_str, str):
+        return 0, 0
+    try:
+        parts = owners_str.replace(",", "").split("..")
+        low = int(parts[0].strip())
+        high = int(parts[1].strip())
+        return low, high
+    except Exception:
+        return 0, 0, 0
+
+
+def transform_game_stubs(games_list: list) -> list[dict]:
+    """
+    Transforms raw SteamSpy game objects into clean database rows
+    """
     rows = []
     for game in games_list:
         app_id = game.get("appid")
         name = game.get("name")
         if not app_id or not name:
             continue
-        rows.append({"app_id": app_id, "name": name})
+
+        raw_owners = game.get("owners", "")
+        owners_min, owners_max = _parse_owners(raw_owners)
+
+        try:
+            positive = int(game.get("positive", 0) or 0)
+        except (ValueError, TypeError):
+            positive = 0
+
+        try:
+            negative = int(game.get("negative", 0) or 0)
+        except (ValueError, TypeError):
+            negative = 0
+
+        total_reviews = positive + negative
+
+        if total_reviews > 0:
+            approval_rate = round((positive / total_reviews) * 100, 2)
+        else:
+            approval_rate = None
+
+        rows.append({
+            "app_id": app_id,
+            "name": name,
+            "owners_min": owners_min,
+            "owners_max": owners_max,
+            "positive_reviews": positive,
+            "negative_reviews": negative,
+            "total_reviews": total_reviews,
+            "approval_rate": approval_rate
+        })
+
     return rows
 
 def transform_game_details(app_id, data):
