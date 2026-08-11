@@ -35,17 +35,44 @@ def _make_request(url: str, api_key: str = None, input_params: Optional[dict] = 
 # Functions to fetch data from Steam API endpoints
 # ===
 
-def get_app_details(app_id):
-    """ Fetches metadata for a specific game. (max 10 appids) """
+def get_app_details(app_id, max_retries=2):
+    """ Fetches metadata for a specific game with retry logic for rate limits. """
     params = {
         "appids": app_id, 
         "cc": "us", 
         "l": "english"
-        }
-    #This endpoint does not require an API key so I wont call the _make_request function here
-    response = requests.get(urls.APP_DETAILS, params=params, timeout=15)
-    response.raise_for_status()
-    return clean_app_details(response.json(), app_id)
+    }
+
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+    }
+
+    for attempt in range(1, max_retries + 1):
+        try:
+            response = requests.get(
+                urls.APP_DETAILS, 
+                params=params, 
+                headers=headers, 
+                timeout=15
+            )
+            
+            if response.status_code in (403, 429):
+                wait_time = attempt * 10 
+                logger.warning(f"Rate limit/Forbidden (status {response.status_code}) para app_id={app_id}. Esperando {wait_time}s (Intento {attempt}/{max_retries})...")
+                time.sleep(wait_time)
+                continue
+
+            response.raise_for_status()       
+            return clean_app_details(response.json(), app_id)
+
+        except requests.exceptions.RequestException as e:
+            logger.warning(f"Error on attempt {attempt} for app_id={app_id}: {e}")
+            if attempt == max_retries:
+                logger.error(f"Max attempts for app_id={app_id}.")
+                return None
+            time.sleep(3)
+
+    return None
 
 def get_app_list(api_key: str, max_results: int = 200):
     """ Fetches the full list of AppIDs from Steam. """
@@ -338,21 +365,64 @@ def steamspy_download_all_pages_resumable(max_page: int, output_folder: str = os
 # Data cleaning and transformation functions
 # ====
 
-def clean_app_details(r : json, app_id):
-    r = r[f"{app_id}"]["data"]
-    r["short_description"] = remove_html_tags(r["short_description"])
-    r["supported_languages"] = extract_languages(r["supported_languages"])
-    r["genres"] = extract_categories(r["genres"])
-    r["categories"] = extract_categories(r["categories"])
-    r["metacritic"] = r["metacritic"]["score"]
-    r["pc_requirements"]["minimum_specs"] = parse_requirements(r["pc_requirements"]["minimum"])
-    r["pc_requirements"]["recommended_specs"] = parse_requirements(r["pc_requirements"]["recommended"])
-    r["pc_requirements"]["minimum"] = remove_html_tags(r["pc_requirements"]["minimum"])
-    r["pc_requirements"]["recommended"] =remove_html_tags(r["pc_requirements"]["recommended"] )
-    r["release_date"]["date"] = string_to_date(r["release_date"]["date"]) 
-    r["price_overview"] = extract_price_from_string(r["price_overview"]["final_formatted"])
-    r["ratings"] = next(iter(r["ratings"].values()), None)
-    return r 
+def clean_app_details(r: dict, app_id: int):
+    app_data = r.get(str(app_id), {})
+    if not app_data.get("success") or "data" not in app_data:
+        return None
+
+    data = app_data["data"]
+
+    short_desc = data.get("short_description", "")
+    data["short_description"] = remove_html_tags(short_desc) if short_desc else None
+
+    data["supported_languages"] = extract_languages(data.get("supported_languages", []))
+    data["genres"] = extract_categories(data.get("genres", []))
+    data["categories"] = extract_categories(data.get("categories", []))
+
+    metacritic = data.get("metacritic", {})
+    if metacritic:
+        data["metacritic"] = metacritic.get("score", None) if isinstance(metacritic, dict) else None
+
+    pc_reqs = data.get("pc_requirements", {})
+    if isinstance(pc_reqs, dict):
+        min_raw = pc_reqs.get("minimum", "")
+        rec_raw = pc_reqs.get("recommended", "")
+
+        pc_reqs["minimum_specs"] = parse_requirements(min_raw) if min_raw else None
+        pc_reqs["recommended_specs"] = parse_requirements(rec_raw) if rec_raw else None
+        pc_reqs["minimum"] = remove_html_tags(min_raw) if min_raw else None
+        pc_reqs["recommended"] = remove_html_tags(rec_raw) if rec_raw else None
+    else:
+        data["pc_requirements"] = {
+            "minimum_specs": None,
+            "recommended_specs": None,
+            "minimum": None,
+            "recommended": None
+        }
+
+    release_date = data.get("release_date", {})
+    date_str = release_date.get("date", "")
+    if data.get("release_date", {}).get("date", None):
+        data["release_date"]["date"] = string_to_date(date_str) if date_str else None
+
+    is_free = data.get("is_free", False)
+    price_overview = data.get("price_overview", 0.0)
+
+    if is_free:
+        data["price_overview"] = 0.0
+    elif isinstance(price_overview, dict):
+        final_fmt = price_overview.get("final_formatted", "")
+        data["price_overview"] = extract_price_from_string(final_fmt) if final_fmt else 0.0
+    else:
+        data["price_overview"] = None
+
+    ratings = data.get("ratings")
+    if isinstance(ratings, dict) and ratings:
+        data["ratings"] = next(iter(ratings.values()), None)
+    else:
+        data["ratings"] = None
+
+    return data
 
 def extract_categories(r : json):
     descriptions_array = [item['description'] for item in r if 'description' in item]
@@ -505,7 +575,9 @@ def save_checkpoint(page: int) -> None:
     Updates the checkpoint file to record the last page successfully 
     inserted into the database.
     """
-    CHECKPOINT_PATH = os.path.join("..", "data", "steamspy_checkpoint.json")
+    CHECKPOINT_PATH = os.path.join("data", "steamspy_checkpoint.json")
+
+    os.makedirs(os.path.dirname(CHECKPOINT_PATH), exist_ok=True)
 
     with open(CHECKPOINT_PATH, "w", encoding="utf-8") as f:
         json.dump({"last_page": page}, f)
@@ -558,7 +630,7 @@ def transform_game_details(app_id, data):
         "is_on_windows": platforms.get("windows", False),
         "is_on_mac": platforms.get("mac", False),
         "is_on_linux": platforms.get("linux", False),
-        "metacritic_score": data.get("metacritic", {}), # SMALLINT
+        "metacritic_score": data.get("metacritic"), # SMALLINT
         "release_date": release_date,
         "price_usd": data.get("price_overview", 0),
         "is_free": data.get("is_free", False),
