@@ -531,13 +531,17 @@ def parse_requirements(raw_html):
     if "memory" in fields:
         m = re.search(r'([\d.]+)\s*GB', fields["memory"], re.IGNORECASE)
         if m:
-            memory_gb = float(m.group(1))
+            val = float(m.group(1))
+            if val.is_integer() and -32768 <= val <= 32767:
+                memory_gb = int(val)
 
     storage_gb = None
     if "storage" in fields:
         m = re.search(r'([\d.]+)\s*GB', fields["storage"], re.IGNORECASE)
         if m:
-            storage_gb = float(m.group(1))
+            val = float(m.group(1))
+            if val.is_integer() and -32768 <= val <= 32767:
+                storage_gb = int(val)
 
     return {
         "processor": fields.get("processor"),
