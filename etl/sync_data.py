@@ -14,8 +14,10 @@ from api.steam_api import (
     transform_user_achievements,
     save_checkpoint,
     read_checkpoint,
-    generate_steam_seed_ids
+    generate_steam_seed_ids,
+    update_live_status
 )
+from sys import stdout
 import logging
 import glob
 import json
@@ -128,13 +130,15 @@ def sync_games(conn, api_key, MAX_PAGE : int, BATCH_SIZE: int = 100):
         save_checkpoint(MAX_PAGE)
 
     app_ids = loader.get_all_app_ids(conn)
-    logger.info(f"Enriching {len(app_ids)} games with appdetails and achievements...")
+    max_games = len(app_ids)
+    logger.info(f"Enriching {max_games} games with appdetails and achievements...")
 
     games_batch = []
     achievements_batch = []
 
     for i, app_id in enumerate(app_ids, start=1):
         try:
+            update_live_status(i, max_games, app_id, "games")
             # Details
             details = get_app_details(app_id)
             if details:
@@ -150,13 +154,15 @@ def sync_games(conn, api_key, MAX_PAGE : int, BATCH_SIZE: int = 100):
                     achievements_batch.extend(achievement_rows)
             
         except Exception as e:
+            print("\r\033[K", end="")
             logger.warning(f"Error fetching data for app_id={app_id}: {e}")
             continue
 
         time.sleep(2)
-
+        
         # Saving the batch
         if i % BATCH_SIZE == 0 or i == len(app_ids):
+            print("\r\033[K", end="")
             try:
                 if games_batch:
                     loader.upsert_games_batch(conn, games_batch)
