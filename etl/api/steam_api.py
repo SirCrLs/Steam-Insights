@@ -9,6 +9,7 @@ import requests
 import json
 import re
 import os
+import sys
 
 logger = logging.getLogger(__name__)
 
@@ -30,6 +31,16 @@ def _make_request(url: str, api_key: str = None, input_params: Optional[dict] = 
     except requests.exceptions.RequestException as e:
         print(f"Error on {url}: {e}")
         return {}
+
+def update_live_status(current, total, current_id, mode : str):
+    if mode == "games":
+        status_text = f"\r\033[K[FETCHING] current game: {current_id} ({current}/{total})"
+    elif mode == "users":
+        status_text = f"\r\033[K[FETCHING] current user: {current_id} ({current}/{total})"
+    else:
+        return
+    sys.stdout.write(status_text)
+    sys.stdout.flush()
 
 # ===
 # Functions to fetch data from Steam API endpoints
@@ -135,31 +146,49 @@ def get_steam_level_distribution(api_key: str, level: int):
     return _make_request(urls.STEAM_LEVEL_DIST, api_key, params)
 
 def get_synced_game_achievements(api_key, appid):
-    """Synchronizes achievements from game schema and achievement percentages."""  
-    raw_response = get_schema_for_game(api_key, appid)
-    achievements = raw_response.get("game", {}).get("availableGameStats",{}).get("achievements", None)
-    if not achievements:
+    """Synchronizes achievements from game schema and achievement percentages.""" 
+    try:
+        raw_response = get_schema_for_game(api_key, appid)
+        if not raw_response:
+            return None
+
+        if not raw_response.get("game", {}).get("availableGameStats", None):
+            return None
+
+        achievements = raw_response.get("game", {}).get("availableGameStats", {}).get("achievements", None)
+        if not achievements:
+            return None
+        
+        perc_data = get_global_achievement_percentages(appid)
+        if not perc_data or "achievementpercentages" not in perc_data:
+            return None
+
+        achievements_percent = perc_data["achievementpercentages"].get("achievements", [])
+        percentage_dict = {item["name"]: item["percent"] for item in achievements_percent if "name" in item and "percent" in item}
+
+        full_achievements = []
+
+        for achievement in achievements:
+            name = achievement.get("name")
+            if not name:
+                continue
+                
+            porcentaje = percentage_dict.get(name, 0.0)
+
+            all_achievements = {
+                "name": name,
+                "displayName": achievement.get("displayName", name),
+                "description": achievement.get("description", ""),
+                "percent": float(porcentaje)
+            }
+
+            full_achievements.append(all_achievements)
+
+        return full_achievements
+
+    except Exception as e:
+        logger.error(f"Error synchronizing achievements for appid {appid}: {e}")
         return None
-    achievements_percent = get_global_achievement_percentages(appid)["achievementpercentages"]["achievements"]
-
-    percentage_dict = {item["name"]: item["percent"] for item in achievements_percent}
-
-    full_achievements = []
-
-    for achievement in achievements:
-        name = achievement["name"]
-        porcentaje = percentage_dict.get(name, 0.0)
-
-        all_achievements = {
-            "name": name,
-            "displayName": achievement.get("displayName", name),
-            "description": achievement.get("description", ""),
-            "percent": float(porcentaje)
-        }
-
-        full_achievements.append(all_achievements)
-
-    return full_achievements
 
 # ===
 # User Functions
@@ -377,7 +406,7 @@ def clean_app_details(r: dict, app_id: int):
     short_desc = data.get("short_description", "")
     data["short_description"] = remove_html_tags(short_desc) if short_desc else None
 
-    data["supported_languages"] = extract_languages(data.get("supported_languages", []))
+    data["supported_languages"] = extract_languages(data.get("supported_languages", None))
     data["genres"] = extract_categories(data.get("genres", []))
     data["categories"] = extract_categories(data.get("categories", []))
 
@@ -402,10 +431,15 @@ def clean_app_details(r: dict, app_id: int):
             "recommended": None
         }
 
-    release_date = data.get("release_date", {})
-    date_str = release_date.get("date", "")
-    if data.get("release_date", {}).get("date", None):
-        data["release_date"]["date"] = string_to_date(date_str) if date_str else None
+    release_date_info = data.get("release_date", {})
+    date_str = release_date_info.get("date")
+
+    if isinstance(date_str, str) and date_str.strip():
+        parsed_date = string_to_date(date_str.strip())
+    else:
+        parsed_date = None
+
+    data["release_date"]["date"] = parsed_date
 
     is_free = data.get("is_free", False)
     price_overview = data.get("price_overview", 0.0)
@@ -457,6 +491,8 @@ def extract_price_from_string(str_price):
     return 0.0 
 
 def extract_languages(text_input):
+    if not text_input:
+        return []
     clean_text = text_input.split('<br>')[0]
     clean_text = re.sub(r'<[^>]+>', '', clean_text)
     clean_text = clean_text.replace('*', '') 
@@ -523,6 +559,8 @@ def clean_summaries(api_key, user_list, max_users = 300):
 
 def string_to_date(fecha_str: str):
     try:
+        if not fecha_str:
+            return None
         return datetime.strptime(fecha_str, "%b %d, %Y").date()
     except ValueError as e:
         print(f"Error: '{fecha_str}' is not valid. Should be 'MM DD, AAAA'")
@@ -676,21 +714,19 @@ def transform_game_details(app_id, data):
     if not data:
         return None
 
+    short_description = data.get("short_description", None)
+    if not short_description:
+        short_description = "N/A"
     specs_min = data.get("pc_requirements", {}).get("minimum_specs", {})
     specs_rec = data.get("pc_requirements", {}).get("recommended_specs", {})
     platforms = data.get("platforms", {})
-    release_date = data.get("release_date", {}).get("date")
+    release_date = data.get("release_date", {}).get("date", None)
 
-    get_positive = lambda d: max(
-        (d.get("recommendations", {}).get("total", 0) 
-            if isinstance(d.get("recommendations"), dict) else d.get("recommendations", 0)) or 0,
-        (d.get("positive", 0)) or 0
-    )
     # Return
     return {
         "app_id": int(app_id),
         "name": data.get("name"),
-        "short_description": data.get("short_description"),
+        "short_description": short_description,
         "genres": data.get("genres"),                                    # TEXT[]
         "categories": data.get("categories"),                            # TEXT[]
         "supported_languages": data.get("supported_languages"),
@@ -748,7 +784,6 @@ def transform_user(player):
         "account_created": player.get("timecreated", None),  
         "is_public": player.get("communityvisibilitystate") == 3,
     }
-
 
 def transform_owned_games(games, user):
     """ maps GetOwnedGames to user_games rows """
