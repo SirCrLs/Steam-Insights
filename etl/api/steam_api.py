@@ -398,7 +398,8 @@ def steamspy_download_all_pages_resumable(max_page: int, output_folder: str = os
 
 def clean_app_details(r: dict, app_id: int):
     app_data = r.get(str(app_id), {})
-    if not app_data.get("success") or "data" not in app_data:
+    if not app_data.get("success", False) or "data" not in app_data:
+        # logger.error(f"API CALL FAILED for {app_data}")
         return None
 
     data = app_data["data"]
@@ -716,7 +717,16 @@ def transform_game_stubs(games_list: list) -> list[dict]:
 def transform_game_details(app_id, data):
     """ maps the appdetails response to the full games schema. """
     if not data:
-        return None
+        return {
+            "app_id": int(app_id), "name": None, "short_description": "API call failed",
+            "genres": None, "categories": None, "supported_languages": None, "header_image": None,
+            "pc_requirements_minimum": None,"pc_requirements_recommended": None,
+            "processor": [None, None], "graphics": [ None, None],"ram_requirement": [None,None],      
+            "storage_requirement": [None, None], "developers": None,"is_on_windows": None,"is_on_mac": None,
+            "is_on_linux": None,"metacritic_score": None, "release_date": None,
+            "price_usd": None,"is_free": None,"rating": None, "total_achievements":None, "recommendations": None,
+            "fetched_at": datetime.now() 
+        }
 
     short_description = data.get("short_description", None)
     if not short_description:
