@@ -129,8 +129,10 @@ def sync_games(conn, api_key, MAX_PAGE : int, BATCH_SIZE: int = 100):
         logger.info(f"{len(game_stub_rows)} games inserted/updated in the database.")
         save_checkpoint(MAX_PAGE)
 
-    app_ids = loader.get_all_app_ids(conn)
+    app_ids = loader.get_all_app_ids_null(conn)
     max_games = len(app_ids)
+    if max_games == 0:
+        logger.info(f"No games left to update: ")
     logger.info(f"Enriching {max_games} games with appdetails and achievements...")
 
     games_batch = []
@@ -141,10 +143,8 @@ def sync_games(conn, api_key, MAX_PAGE : int, BATCH_SIZE: int = 100):
             update_live_status(i, max_games, app_id, "games")
             # Details
             details = get_app_details(app_id)
-            if details:
-                game_row = transform_game_details(app_id, details)
-                if game_row:
-                    games_batch.append(game_row)
+            game_row = transform_game_details(app_id, details)
+            games_batch.append(game_row)
 
             # Scheme achievements
             achievements = get_synced_game_achievements(api_key, app_id)
@@ -187,7 +187,7 @@ def sync_games(conn, api_key, MAX_PAGE : int, BATCH_SIZE: int = 100):
 
 def sync_users(conn, api_key, MAX_USERS:int = 300, BATCH_SIZE: int = 100):
     """ USERS """
-    SEED_FILE: str = os.path.join("..", "data", "seed_steam_ids.txt")
+    SEED_FILE: str = os.path.join("data", "seed_steam_ids.txt")
 
     steam_ids = generate_steam_seed_ids(api_key,MAX_USERS)
 

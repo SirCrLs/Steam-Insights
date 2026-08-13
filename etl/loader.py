@@ -30,6 +30,18 @@ def get_connection(retries: int = 5, delay: int = 2):
                 raise e
             time.sleep(delay)
 
+def get_game_name(conn, app_id):
+    """
+    Obtains name from app_id.
+    """
+    query = "SELECT name FROM games WHERE app_id = %s;"
+    with conn.cursor() as cursor:
+        cursor.execute(query, (app_id,))
+        result = cursor.fetchone()
+        if result:
+            return result[0]
+    return None
+
 def upsert_game_stubs(conn, game_stub_rows, page_size=1000):
     """
     Inserts or updates a batch of basic game data (app_id, name, owners range, and review metrics).
@@ -72,7 +84,7 @@ def upsert_game_stubs(conn, game_stub_rows, page_size=1000):
     with conn.cursor() as cursor:
         execute_batch(cursor, query, game_stub_rows, page_size=page_size)
 
-def get_all_app_ids(conn) -> list[int]:
+def get_all_app_ids_null(conn) -> list[int]:
     """
     Obtains app_id from the table 'games' which dont have details
     checking if 'short_description' is empty or NULL.
@@ -100,6 +112,10 @@ def upsert_games_batch(conn, games_batch, page_size=100):
     """
     if not games_batch:
         return
+
+    for row in games_batch:
+        if row.get("name") is None:
+            row["name"] = get_game_name(conn, row["app_id"])
 
     query = """
         INSERT INTO games (
