@@ -811,8 +811,8 @@ def transform_owned_games(games, user):
         rows.append({
             "steam_id" : user,
             "app_id": game.get("app_id"),
-            "playtime_forever_minutes": game.get("playtime_forever", 0),
-            "playtime_2weeks_minutes": game.get("playtime_2weeks", 0),
+            "playtime_forever": game.get("playtime_forever", 0),
+            "playtime_2weeks": game.get("playtime_2weeks", 0),
         })
 
     return rows
