@@ -25,3 +25,5 @@ STEAM_LEVEL_DIST = f"{BASE_URL}/IPlayerService/GetSteamLevelDistribution/v1/"
 # ISteamUser
 U_PLAYER_SUMMARY = f"{BASE_URL}/ISteamUser/GetPlayerSummaries/v2/"
 U_GET_FRIEND_LIST = f"{BASE_URL}/ISteamUser/GetFriendList/v1/"
+
+USER_ACHIEVEMENTS = "https://api.steampowered.com/ISteamUserStats/GetPlayerAchievements/v1/"

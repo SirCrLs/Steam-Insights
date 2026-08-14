@@ -62,7 +62,6 @@ CREATE TABLE user_games (
     app_id INTEGER REFERENCES games(app_id) ON DELETE CASCADE,
     playtime_forever INTEGER,
     playtime_2weeks INTEGER,
-    fetched_at TIMESTAMP DEFAULT now(),
     PRIMARY KEY (steam_id, app_id)
 );
 
@@ -86,7 +85,7 @@ CREATE TABLE user_achievements (
     steam_id BIGINT REFERENCES users(steam_id) ON DELETE CASCADE,
     app_id INTEGER,
     achievement_key TEXT,
-    display_name TEXT,
+    unlocktime DATE,
     PRIMARY KEY (steam_id, app_id, achievement_key),
     FOREIGN KEY (app_id, achievement_key) REFERENCES achievements(app_id, achievement_key) ON DELETE CASCADE
 );
