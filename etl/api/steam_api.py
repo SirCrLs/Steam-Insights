@@ -2,6 +2,7 @@ from api import endpoints as urls
 from datetime import datetime
 from typing import Optional
 from pathlib import Path
+from loader import fetch_achievement_keys_mapping
 import steamspypi
 import logging
 import time
@@ -788,6 +789,9 @@ def transform_user(player):
     """ Mapea un diccionario individual de jugador a la estructura de la BD. """
     if not player:
         raise ValueError("No player data provided.")
+    time_account_created = player.get("timecreated", None)
+    if time_account_created:
+        time_account_created = datetime.fromtimestamp(time_account_created)
 
     return {
         "steam_id": int(player["steamid"]),
@@ -795,7 +799,7 @@ def transform_user(player):
         "profile_url": player.get("profileurl", None),
         "avatar_url" : player.get("avatarfull", None),
         "country_code": player.get("loccountrycode", None),
-        "account_created": player.get("timecreated", None),  
+        "account_created": time_account_created,  
         "is_public": player.get("communityvisibilitystate") == 3,
     }
 
@@ -813,24 +817,7 @@ def transform_owned_games(games, user):
 
     return rows
 
-def fetch_achievement_keys_mapping(cursor, app_ids):
-    """
-    Obtains from a single query (app_id, display_name) -> achievement_key
-    """
-    if not app_ids:
-        return {}
-
-    query = """
-        SELECT app_id, display_name, achievement_key 
-        FROM achievements 
-        WHERE app_id = ANY(%s);
-    """
-    cursor.execute(query, (list(app_ids),))
-    rows = cursor.fetchall()
-
-    return {(row["app_id"], row["display_name"]): row["achievement_key"] for row in rows}
-
-def transform_user_achievements(raw_achievements_list, steam_id, db_cursor):
+def transform_user_achievements(raw_achievements_list, steam_id, conn):
     """
     Transforms users achievements
     """
@@ -838,16 +825,16 @@ def transform_user_achievements(raw_achievements_list, steam_id, db_cursor):
     valid_app_ids = set()
 
     for game_data in raw_achievements_list:
-        achievements = game_data.get("achievements")
+        achievements = game_data.get("achievements", None)
         
-        if achievements and game_data.get("appid"):
+        if achievements and game_data.get("appid", None):
             valid_games.append(game_data)
             valid_app_ids.add(game_data.get("appid"))
 
     if not valid_app_ids:
         return []
 
-    schema_mapping = fetch_achievement_keys_mapping(db_cursor, valid_app_ids)
+    schema_mapping = fetch_achievement_keys_mapping(conn, valid_app_ids)
     all_rows = []
 
     for game_data in valid_games:
@@ -864,8 +851,6 @@ def transform_user_achievements(raw_achievements_list, steam_id, db_cursor):
                 "app_id": app_id,
                 "achievement_key": achievement_key,
                 "display_name": display_name,
-                "unlocked": True,
-                "unlock_time": ach.get("unlocktime") or None,
             })
 
     return all_rows
