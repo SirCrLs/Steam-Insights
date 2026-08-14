@@ -221,6 +221,7 @@ def sync_users(conn, api_key, MAX_USERS:int = 300, BATCH_SIZE: int = 100):
             if raw_games:
                 user_games_rows = transform_owned_games(raw_games,steam_id)
                 user_games_batch.extend(user_games_rows)
+                print(user_games_rows)
 
                 game_ids = []
                 for game in user_games_rows:
