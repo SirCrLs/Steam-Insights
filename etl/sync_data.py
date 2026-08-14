@@ -133,6 +133,7 @@ def sync_games(conn, api_key, MAX_PAGE : int, BATCH_SIZE: int = 100):
     max_games = len(app_ids)
     if max_games == 0:
         logger.info(f"No games left to update: ")
+        return
     logger.info(f"Enriching {max_games} games with appdetails and achievements...")
 
     games_batch = []
@@ -187,9 +188,9 @@ def sync_games(conn, api_key, MAX_PAGE : int, BATCH_SIZE: int = 100):
 
 def sync_users(conn, api_key, MAX_USERS:int = 300, BATCH_SIZE: int = 100):
     """ USERS """
-    SEED_FILE: str = os.path.join("data", "seed_steam_ids.txt")
+    SEED_FILE: str = os.path.join("data/seed_steam_ids.txt")
 
-    steam_ids = generate_steam_seed_ids(api_key,MAX_USERS)
+    steam_ids = generate_steam_seed_ids(api_key,MAX_USERS, SEED_FILE)
 
     if steam_ids == None:
         logger.error(f"SteamIDs could not be loaded from {SEED_FILE}.")
@@ -211,11 +212,11 @@ def sync_users(conn, api_key, MAX_USERS:int = 300, BATCH_SIZE: int = 100):
 
     for i, steam_id in enumerate(steam_ids, start=1):
         try:
-            logger.info(f"Syncing user {steam_id} ({i}/{len(steam_ids)})...")
+            update_live_status(i, len(steam_ids), steam_id, "users")
 
             # Owned games
             owned_response = get_owned_games(api_key, steam_id)
-            raw_games = owned_response.get("response", {}).get("games", []) if owned_response else []
+            raw_games = owned_response.get("response", {}).get("games", [])
             
             if raw_games:
                 user_games_rows = transform_owned_games(raw_games,steam_id)
@@ -228,14 +229,18 @@ def sync_users(conn, api_key, MAX_USERS:int = 300, BATCH_SIZE: int = 100):
                 # Achievements per owned game
                 achievements = get_top_achievements(api_key, steam_id, game_ids)
                 if achievements: 
-                    ach_rows = transform_user_achievements(achievements, steam_id, game_ids)
+                    ach_rows = transform_user_achievements(achievements, steam_id, conn)
                     user_achievements_batch.extend(ach_rows)
 
         except Exception as e:
+            print("\r\033[K", end="")
             logger.warning(f"Error fetching API data for user {steam_id}: {e}")
             continue
 
+        time.sleep(1)
+
         if i % BATCH_SIZE == 0 or i == len(steam_ids):
+            print("\r\033[K", end="")
             try:
                 if user_games_batch:
                     loader.upsert_user_games_batch(conn, user_games_batch)
