@@ -202,9 +202,6 @@ def upsert_games_batch(conn, games_batch, page_size=100):
     with conn.cursor() as cursor:
         execute_batch(cursor, query, games_batch, page_size=page_size)
 
-# loader.py
-from psycopg2.extras import execute_batch
-
 def upsert_achievements_batch(conn, achievement_rows, page_size=500):
     """
     Inserts or updates a batch of game achievements in PostgreSQL.
@@ -270,25 +267,6 @@ def upsert_users_batch(conn, user_rows):
     with conn.cursor() as cursor:
         execute_batch(cursor, query, user_rows, page_size=500)
 
-def fetch_achievement_keys_mapping(conn, app_ids):
-    """
-    Obtains from a single query (app_id, display_name) -> achievement_key
-    """
-    if not app_ids:
-        return {}
-
-    query = """
-        SELECT app_id, display_name, achievement_key 
-        FROM achievements 
-        WHERE app_id = ANY(%s);
-    """
-
-    with conn.cursor() as cursor:
-        cursor.execute(query, (list(app_ids),))
-        rows = cursor.fetchall()
-
-    return {(row["app_id"], row["display_name"]): row["achievement_key"] for row in rows}
-
 def upsert_user_games_batch(conn, user_games_rows):
     """Inserts user games in a batch"""
     if not user_games_rows:
@@ -324,17 +302,16 @@ def upsert_user_achievements_batch(conn, ach_rows):
             steam_id, 
             app_id, 
             achievement_key, 
-            display_name,
-
+            unlock_time
         )
         VALUES (
             %(steam_id)s, 
             %(app_id)s, 
             %(achievement_key)s, 
-            %(display_name)s
+            %(unlock_time)s
         )
         ON CONFLICT (steam_id, app_id, achievement_key) DO UPDATE SET
-            display_name = EXCLUDED.display_name,
+            unlock_time = EXCLUDED.unlock_time;
     """
     with conn.cursor() as cursor:
         execute_batch(cursor, query, ach_rows, page_size=500)

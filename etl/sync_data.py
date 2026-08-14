@@ -1,3 +1,4 @@
+from api.steam_api import get_user_achievements
 from api.steam_api import clean_summaries
 from api.steam_api import (
     steamspy_download_all_pages_resumable,
@@ -221,17 +222,18 @@ def sync_users(conn, api_key, MAX_USERS:int = 300, BATCH_SIZE: int = 100):
             if raw_games:
                 user_games_rows = transform_owned_games(raw_games,steam_id)
                 user_games_batch.extend(user_games_rows)
-                print(user_games_rows)
 
                 game_ids = []
                 for game in user_games_rows:
-                    game_ids.append(game.get("appid"))
+                    if game.get("playtime_forever", 0) != 0:
+                        game_ids.append(game.get("appid"))
 
                 # Achievements per owned game
-                achievements = get_top_achievements(api_key, steam_id, game_ids)
-                if achievements: 
-                    ach_rows = transform_user_achievements(achievements, steam_id, conn)
-                    user_achievements_batch.extend(ach_rows)
+                for game in game_ids: 
+                    achievements = get_user_achievements(api_key, steam_id, game)
+                    if achievements: 
+                        ach_rows = transform_user_achievements(achievements, game)
+                        user_achievements_batch.extend(ach_rows)
 
         except Exception as e:
             print("\r\033[K", end="")
@@ -243,6 +245,8 @@ def sync_users(conn, api_key, MAX_USERS:int = 300, BATCH_SIZE: int = 100):
         if i % BATCH_SIZE == 0 or i == len(steam_ids):
             print("\r\033[K", end="")
             try:
+                print(user_games_batch)
+                print(user_achievements_batch)
                 if user_games_batch:
                     loader.upsert_user_games_batch(conn, user_games_batch)
 

@@ -2,7 +2,6 @@ from api import endpoints as urls
 from datetime import datetime
 from typing import Optional
 from pathlib import Path
-from loader import fetch_achievement_keys_mapping
 import steamspypi
 import logging
 import time
@@ -236,6 +235,18 @@ def get_top_achievements(api_key: str, steam_id: int, app_ids: list[int]):
         params[f"appids[{i}]"] = app_id
 
     response = requests.get(urls.U_TOP_ACHIEVEMENTS, params=params, timeout=15)
+    response.raise_for_status()
+    return response.json()
+
+def get_user_achievements(api_key, steam_id, app_id):
+    """Fetches user achievemnts of one game."""
+
+    params = {
+        "key": api_key,
+        "steamid": steam_id,
+        "appid": app_id
+    }
+    response = requests.get(urls.USER_ACHIEVEMENTS, params=params, timeout=15)
     response.raise_for_status()
     return response.json()
 
@@ -807,6 +818,8 @@ def transform_owned_games(games, user):
     """ maps GetOwnedGames to user_games rows """
     rows = []
     for game in games:
+        if not game.get("app_id", None):
+            continue
 
         rows.append({
             "steam_id" : user,
@@ -817,40 +830,29 @@ def transform_owned_games(games, user):
 
     return rows
 
-def transform_user_achievements(raw_achievements_list, steam_id, conn):
+def transform_user_achievements(raw_achievements_list, app_id):
     """
     Transforms users achievements
     """
-    valid_games = []
-    valid_app_ids = set()
+    achievements_list = raw_achievements_list.get("playerstats",{})
+    if not achievements_list:
+        return None
 
-    for game_data in raw_achievements_list:
-        achievements = game_data.get("achievements", None)
-        
-        if achievements and game_data.get("appid", None):
-            valid_games.append(game_data)
-            valid_app_ids.add(game_data.get("appid"))
-
-    if not valid_app_ids:
-        return []
-
-    schema_mapping = fetch_achievement_keys_mapping(conn, valid_app_ids)
+    steam_id = achievements_list.get("steamID")
     all_rows = []
 
-    for game_data in valid_games:
-        app_id = game_data.get("appid")
-        achievements = game_data.get("achievements", [])
+    for achievement in achievements_list.get("achievements", {}):
+        if achievement.get("achieved", 0) == 0:
+            continue
+        
+        achievement_key = achievement.get("apiname", None)
+        unlock_time = achievement.get("unlocktime", None)
 
-        for ach in achievements:
-            display_name = ach.get("name")
-                
-            achievement_key = schema_mapping.get((app_id, display_name))
-
-            all_rows.append({
-                "steam_id": steam_id,
-                "app_id": app_id,
-                "achievement_key": achievement_key,
-                "display_name": display_name,
-            })
+        all_rows.append({
+            "steam_id": steam_id,
+            "app_id": app_id,
+            "achievement_key": achievement_key,
+            "unlock_time": unlock_time
+        })
 
     return all_rows
