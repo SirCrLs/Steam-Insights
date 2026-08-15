@@ -268,11 +268,24 @@ def upsert_users_batch(conn, user_rows):
         execute_batch(cursor, query, user_rows, page_size=500)
 
 def upsert_user_games_batch(conn, user_games_rows):
-    """Inserts user games in a batch"""
+    """Inserts user games in a batch, ensuring parent games exist first."""
     if not user_games_rows:
         return
 
-    query = """
+    unique_games = [
+        {"app_id": app_id}
+        for app_id in {row["app_id"] for row in user_games_rows}
+    ]
+
+    # Insert games that dont exist on DB
+    games_query = """
+        INSERT INTO games (app_id, name)
+        VALUES (%(app_id)s, 'Not in DB')
+        ON CONFLICT (app_id) DO NOTHING;
+    """
+
+    # Insert User games
+    user_games_query = """
         INSERT INTO user_games (
             steam_id, 
             app_id, 
@@ -289,15 +302,32 @@ def upsert_user_games_batch(conn, user_games_rows):
             playtime_forever = EXCLUDED.playtime_forever,
             playtime_2weeks = EXCLUDED.playtime_2weeks;
     """
+
     with conn.cursor() as cursor:
-        execute_batch(cursor, query, user_games_rows, page_size=500)
+        execute_batch(cursor, games_query, unique_games, page_size=500)
+        execute_batch(cursor, user_games_query, user_games_rows, page_size=500)
 
 def upsert_user_achievements_batch(conn, ach_rows):
-    """Inserts user achievements in a batch"""
+    """Inserts parent achievement records first, then user achievements in batch."""
     if not ach_rows:
         return
 
-    query = """
+    unique_achievements = [
+        {"app_id": app_id, "achievement_key": ach_key}
+        for app_id, ach_key in {
+            (row["app_id"], row["achievement_key"]) for row in ach_rows
+        }
+    ]
+
+    # Insert missing achievements
+    achievements_query = """
+        INSERT INTO achievements (app_id, achievement_key, display_name)
+        VALUES (%(app_id)s, %(achievement_key)s, NULL)
+        ON CONFLICT (app_id, achievement_key) DO NOTHING;
+    """
+
+    # Insert user achievements
+    user_achievements_query = """
         INSERT INTO user_achievements (
             steam_id, 
             app_id, 
@@ -313,5 +343,7 @@ def upsert_user_achievements_batch(conn, ach_rows):
         ON CONFLICT (steam_id, app_id, achievement_key) DO UPDATE SET
             unlock_time = EXCLUDED.unlock_time;
     """
+
     with conn.cursor() as cursor:
-        execute_batch(cursor, query, ach_rows, page_size=500)
+        execute_batch(cursor, achievements_query, unique_achievements, page_size=500)
+        execute_batch(cursor, user_achievements_query, ach_rows, page_size=500)
