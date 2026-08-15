@@ -10,6 +10,8 @@ import json
 import re
 import os
 import sys
+import asyncio
+import aiohttp
 
 logger = logging.getLogger(__name__)
 
@@ -247,8 +249,59 @@ def get_user_achievements(api_key, steam_id, app_id):
         "appid": app_id
     }
     response = requests.get(urls.USER_ACHIEVEMENTS, params=params, timeout=15)
+    # 400 -> game has no achievements | 500 -> internal server error (idk)
+    if response.status_code in (400, 500):
+        return None
     response.raise_for_status()
     return response.json()
+
+async def fetch_achievements_async(session, api_key, steam_id, app_id, semaphore, retries=3):
+    params = {"key": api_key, "steamid": steam_id, "appid": app_id}
+
+    async with semaphore:
+        await asyncio.sleep(0.2)
+
+        for attempt in range(retries):
+            try:
+                async with session.get(urls.USER_ACHIEVEMENTS, params=params, timeout=10) as resp:
+                    if resp.status in (403, 429):
+                        backoff = 2**attempt * 5 
+                        logger.warning(
+                            f"Rate limit hit ({resp.status}) for app_id {app_id}. Retrying in {backoff}s..."
+                        )
+                        await asyncio.sleep(backoff)
+                        continue
+
+                    if resp.status in (400, 500):
+                        return None
+                    if resp.status == 200:
+                        data = await resp.json()
+                        playerstats = data.get("playerstats", {})
+                        if playerstats.get("success"):
+                            return transform_user_achievements(playerstats, app_id)
+                        return None
+
+            except Exception as e:
+                logger.debug(
+                    f"Attempt {attempt + 1} failed for app_id {app_id}: {e}"
+                )
+                await asyncio.sleep(1)
+
+        return None
+
+async def fetch_user_achievements_concurrently(api_key, steam_id, game_ids):
+    MAX_REQUESTS = 3
+    semaphore = asyncio.Semaphore(MAX_REQUESTS)
+
+    async with aiohttp.ClientSession() as session:
+        tasks = [
+            fetch_achievements_async(session, api_key, steam_id, app_id, semaphore)
+            for app_id in game_ids
+        ]
+        results = await asyncio.gather(*tasks)
+
+    achievements = [item for sublist in results if sublist for item in sublist]
+    return achievements
 
 def get_player_summaries(api_key: str, steam_ids: list):
     """ Fetches summaries for a list of users. """
@@ -818,23 +871,22 @@ def transform_owned_games(games, user):
     """ maps GetOwnedGames to user_games rows """
     rows = []
     for game in games:
-        if not game.get("app_id", None):
+        if not game.get("appid", None):
             continue
 
         rows.append({
             "steam_id" : user,
-            "app_id": game.get("app_id"),
+            "app_id": game.get("appid"),
             "playtime_forever": game.get("playtime_forever", 0),
             "playtime_2weeks": game.get("playtime_2weeks", 0),
         })
 
     return rows
 
-def transform_user_achievements(raw_achievements_list, app_id):
+def transform_user_achievements(achievements_list, app_id):
     """
     Transforms users achievements
     """
-    achievements_list = raw_achievements_list.get("playerstats",{})
     if not achievements_list:
         return None
 
@@ -847,6 +899,8 @@ def transform_user_achievements(raw_achievements_list, app_id):
         
         achievement_key = achievement.get("apiname", None)
         unlock_time = achievement.get("unlocktime", None)
+        if unlock_time:
+            unlock_time = datetime.fromtimestamp(unlock_time)
 
         all_rows.append({
             "steam_id": steam_id,

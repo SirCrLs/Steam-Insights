@@ -2,3 +2,4 @@ requests
 python-dotenv
 steamspypi
 psycopg2-binary
+aiohttp

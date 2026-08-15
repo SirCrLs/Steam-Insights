@@ -16,6 +16,7 @@ from api.steam_api import (
     save_checkpoint,
     read_checkpoint,
     generate_steam_seed_ids,
+    fetch_user_achievements_concurrently,
     update_live_status
 )
 from sys import stdout
@@ -25,6 +26,7 @@ import json
 import os
 import time
 import loader
+import asyncio
 
 logging.basicConfig(
     level=logging.INFO,
@@ -187,6 +189,14 @@ def sync_games(conn, api_key, MAX_PAGE : int, BATCH_SIZE: int = 100):
 
     logger.info("Games sync completed.")
 
+def fetch_and_transform_all_achievements(api_key, steam_id, game_ids):
+    try:
+        user_achievements_batch = asyncio.run(fetch_user_achievements_concurrently(api_key, steam_id, game_ids))
+        return user_achievements_batch
+    except Exception as e:
+        logger.error(f"Error fetching achievements concurrently for user {steam_id}: {e}")
+        return []
+
 def sync_users(conn, api_key, MAX_USERS:int = 300, BATCH_SIZE: int = 100):
     """ USERS """
     SEED_FILE: str = os.path.join("data/seed_steam_ids.txt")
@@ -217,8 +227,14 @@ def sync_users(conn, api_key, MAX_USERS:int = 300, BATCH_SIZE: int = 100):
 
             # Owned games
             owned_response = get_owned_games(api_key, steam_id)
+
+            if not owned_response.get("response"):
+                time.sleep(1)
+                print("\r\033[K", end="")
+                logger.warning(f"User {i}: {steam_id} has no public games...")
+                continue
+
             raw_games = owned_response.get("response", {}).get("games", [])
-            
             if raw_games:
                 user_games_rows = transform_owned_games(raw_games,steam_id)
                 user_games_batch.extend(user_games_rows)
@@ -226,14 +242,11 @@ def sync_users(conn, api_key, MAX_USERS:int = 300, BATCH_SIZE: int = 100):
                 game_ids = []
                 for game in user_games_rows:
                     if game.get("playtime_forever", 0) != 0:
-                        game_ids.append(game.get("appid"))
+                        game_ids.append(game.get("app_id"))
 
                 # Achievements per owned game
-                for game in game_ids: 
-                    achievements = get_user_achievements(api_key, steam_id, game)
-                    if achievements: 
-                        ach_rows = transform_user_achievements(achievements, game)
-                        user_achievements_batch.extend(ach_rows)
+                user_achievements_batch = fetch_and_transform_all_achievements(api_key, steam_id, game_ids)
+
 
         except Exception as e:
             print("\r\033[K", end="")
@@ -244,9 +257,8 @@ def sync_users(conn, api_key, MAX_USERS:int = 300, BATCH_SIZE: int = 100):
 
         if i % BATCH_SIZE == 0 or i == len(steam_ids):
             print("\r\033[K", end="")
+            print(user_achievements_batch)
             try:
-                print(user_games_batch)
-                print(user_achievements_batch)
                 if user_games_batch:
                     loader.upsert_user_games_batch(conn, user_games_batch)
 
