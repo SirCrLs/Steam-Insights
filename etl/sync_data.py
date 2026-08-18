@@ -308,9 +308,6 @@ def sync_users(conn, api_key, MAX_USERS:int = 300, BATCH_SIZE: int = 100):
             raw_games = games_data.get("games", [])
             has_public_games = True
 
-            raw_games = games_data.get("games", [])
-            has_public_games = True
-
             if raw_games:
                 user_games_rows = transform_owned_games(raw_games, steam_id)
                 
