@@ -273,6 +273,22 @@ def upsert_users_batch(conn, user_rows):
     with conn.cursor() as cursor:
         execute_batch(cursor, query, user_rows, page_size=500)
 
+def update_users_status_batch(conn, users_status_rows):
+    """Updates users flags."""
+    if not users_status_rows:
+        return
+
+    query = """
+    UPDATE users SET
+        has_public_games = %(has_public_games)s,
+        has_public_achievements = %(has_public_achievements)s,
+        games_fetched = %(games_fetched)s
+    WHERE steam_id = %(steam_id)s;
+    """
+    
+    with conn.cursor() as cursor:
+        execute_batch(cursor, query, users_status_rows, page_size=500)
+
 def upsert_user_games_batch(conn, user_games_rows):
     """Inserts user games in a batch, ensuring parent games exist first."""
     if not user_games_rows:

@@ -191,11 +191,13 @@ def sync_games(conn, api_key, MAX_PAGE : int, BATCH_SIZE: int = 100):
 
 def fetch_and_transform_all_achievements(api_key, steam_id, game_ids):
     try:
-        user_achievements_batch = asyncio.run(fetch_user_achievements_concurrently(api_key, steam_id, game_ids))
-        return user_achievements_batch
+        user_achievements_batch, achievements_by_game = asyncio.run(
+            fetch_user_achievements_concurrently(api_key, steam_id, game_ids)
+        )
+        return user_achievements_batch, achievements_by_game
     except Exception as e:
         logger.error(f"Error fetching achievements concurrently for user {steam_id}: {e}")
-        return []
+        return [], {}
 
 def verify_users(conn, api_key, max_users: int, seed_file: str):
     # Gets users where games_fetched = FALSE
@@ -306,21 +308,33 @@ def sync_users(conn, api_key, MAX_USERS:int = 300, BATCH_SIZE: int = 100):
             raw_games = games_data.get("games", [])
             has_public_games = True
 
+            raw_games = games_data.get("games", [])
+            has_public_games = True
+
             if raw_games:
                 user_games_rows = transform_owned_games(raw_games, steam_id)
-                user_games_batch.extend(user_games_rows)
+                
+                games_by_id = {game["app_id"]: game for game in user_games_rows}
+                
+                game_ids = []
+                for game in user_games_rows:
+                    if game.get("playtime_forever", 0) != 0:
+                        game_ids.append(game.get("app_id"))
+                        game["achievements_status"] = "pending"
+                    else:
+                        game["achievements_status"] = "no achievements"
 
-                game_ids = [
-                    game.get("app_id") for game in user_games_rows 
-                    if game.get("playtime_forever", 0) != 0
-                ]
-
-                # Achievements per owned game
-                user_achievements = fetch_and_transform_all_achievements(api_key, steam_id, game_ids)
+                user_achievements, achievements_by_game = fetch_and_transform_all_achievements(api_key, steam_id, game_ids)
                 
                 if user_achievements:
                     has_public_achievements = True
                     user_achievements_batch.extend(user_achievements)
+
+                for app_id in game_ids:
+                    if app_id in games_by_id:
+                        games_by_id[app_id]["achievements_status"] = achievements_by_game.get(app_id, "no achievements")
+
+                user_games_batch.extend(user_games_rows)
 
             users_status_batch.append({
                 "steam_id": steam_id,
