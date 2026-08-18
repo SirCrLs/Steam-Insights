@@ -246,7 +246,8 @@ def upsert_users_batch(conn, user_rows):
         avatar_url, 
         country_code, 
         account_created, 
-        is_public
+        is_public,
+        games_fetched
     )
     VALUES (
         %(steam_id)s, 
@@ -255,15 +256,20 @@ def upsert_users_batch(conn, user_rows):
         %(avatar_url)s, 
         %(country_code)s, 
         %(account_created)s, 
-        %(is_public)s
+        %(is_public)s,
+        CASE WHEN %(is_public)s = FALSE THEN FALSE ELSE NULL END
     )
     ON CONFLICT (steam_id) DO UPDATE SET
         persona_name = EXCLUDED.persona_name,
         profile_url = EXCLUDED.profile_url,
         avatar_url = EXCLUDED.avatar_url,
         country_code = EXCLUDED.country_code,
-        is_public = EXCLUDED.is_public;
-"""
+        is_public = EXCLUDED.is_public,
+        games_fetched = CASE 
+            WHEN EXCLUDED.is_public = FALSE THEN FALSE 
+            ELSE users.games_fetched 
+        END;
+    """
     with conn.cursor() as cursor:
         execute_batch(cursor, query, user_rows, page_size=500)
 

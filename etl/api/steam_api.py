@@ -264,15 +264,15 @@ async def fetch_achievements_async(session, api_key, steam_id, app_id, semaphore
         for attempt in range(retries):
             try:
                 async with session.get(urls.USER_ACHIEVEMENTS, params=params, timeout=10) as resp:
-                    if resp.status in (403, 429):
-                        backoff = 2**attempt * 5 
+                    if resp.status == 429:
+                        backoff = 2**attempt * 10
                         logger.warning(
                             f"Rate limit hit ({resp.status}) for app_id {app_id}. Retrying in {backoff}s..."
                         )
                         await asyncio.sleep(backoff)
                         continue
 
-                    if resp.status in (400, 500):
+                    if resp.status in (400, 403, 500):
                         return None
                     if resp.status == 200:
                         data = await resp.json()

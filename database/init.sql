@@ -53,6 +53,9 @@ CREATE TABLE users (
     country_code CHAR(2),
     account_created TIMESTAMP,
     is_public BOOLEAN,
+    has_public_games BOOLEAN DEFAULT false, --false until proven otherwise
+    has_public_achievements BOOLEAN DEFAULT false,
+    games_fetched BOOLEAN DEFAULT NULL;
     fetched_at TIMESTAMP DEFAULT now()
 );
 
@@ -62,6 +65,7 @@ CREATE TABLE user_games (
     app_id INTEGER REFERENCES games(app_id) ON DELETE CASCADE,
     playtime_forever INTEGER,
     playtime_2weeks INTEGER,
+    achievements_status TEXT DEFAULT 'pending', --'success', 'private', 'no achievements'
     PRIMARY KEY (steam_id, app_id)
 );
 
