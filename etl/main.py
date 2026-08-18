@@ -18,7 +18,7 @@ def main():
 
     try:
         logger.info(f"=== 1. Syncing games ===")
-        sync_games(conn, api_key, MAX_PAGE, GAMES_BATCH_SIZE)
+        #sync_games(conn, api_key, MAX_PAGE, GAMES_BATCH_SIZE)
 
         logger.info(f"=== 2. Syncing users ===")
         sync_users(conn, api_key, MAX_USERS, USERS_BATCH_SIZE)

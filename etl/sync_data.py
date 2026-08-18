@@ -200,36 +200,40 @@ def fetch_and_transform_all_achievements(api_key, steam_id, game_ids):
         return [], {}
 
 def verify_users(conn, api_key, max_users: int, seed_file: str):
-    # Gets users where games_fetched = FALSE
     with conn.cursor() as cur:
-        cur.execute("""
-            SELECT steam_id FROM users WHERE games_fetched IS NULL LIMIT %s;
-        """, (max_users,))
-        db_steam_ids = [row[0] for row in cur.fetchall()]
+        cur.execute("SELECT steam_id, games_fetched FROM users;")
+        db_rows = cur.fetchall()
 
-    logger.info(f"{len(db_steam_ids)} users fetched from DB.")
-    steam_ids = list(db_steam_ids)
+    existing_db_ids = set(row[0] for row in db_rows)
+    total_db_count = len(existing_db_ids)
 
-    # this if db_steam_ids is not enough to reach mas_users
-    if len(steam_ids) < max_users:
-        needed = max_users - len(steam_ids)
-        logger.info(f"Fetching {needed} users from .txt")
+    logger.info(f"{total_db_count} total users fetched from DB.")
 
-        with conn.cursor() as cur:
-            cur.execute("SELECT steam_id FROM users;")
-            existing_db_ids = set(row[0] for row in cur.fetchall())
+    status_map = {row[0]: row[1] for row in db_rows}
+    all_candidate_ids = list(existing_db_ids)[:max_users]
+
+    if total_db_count < max_users:
+        needed = max_users - total_db_count
+        logger.info(f"Total DB users ({total_db_count}) < max_users ({max_users}). Fetching {needed} remaining from seed file.")
 
         seed_ids = generate_steam_seed_ids(api_key, max_users, seed_file)
 
         if seed_ids is None:
             logger.error(f"SteamIDs could not be loaded from {seed_file}.")
         else:
-            current_set = set(steam_ids)
+            current_set = set(all_candidate_ids)
             new_ids = [sid for sid in seed_ids if sid not in existing_db_ids and sid not in current_set]
             
-            steam_ids.extend(new_ids[:needed])
+            all_candidate_ids.extend(new_ids[:needed])
 
-    return steam_ids
+    valid_steam_ids = [
+        sid for sid in all_candidate_ids 
+        if status_map.get(sid) is None
+    ]
+
+    logger.info(f"{len(valid_steam_ids)} valid pending users (games_fetched IS NULL) ready to process.")
+
+    return valid_steam_ids
 
 def sync_users(conn, api_key, MAX_USERS:int = 300, BATCH_SIZE: int = 100):
     """ USERS """
@@ -257,31 +261,6 @@ def sync_users(conn, api_key, MAX_USERS:int = 300, BATCH_SIZE: int = 100):
         conn.commit()
 
     for i, steam_id in enumerate(steam_ids, start=1):
-
-        if i % BATCH_SIZE == 0 or i == len(steam_ids):
-            print("\r\033[K", end="")
-            try:
-                if users_status_batch:
-                    loader.update_users_status_batch(conn, users_status_batch)
-
-                if user_games_batch:
-                    loader.upsert_user_games_batch(conn, user_games_batch)
-
-                if user_achievements_batch:
-                    loader.upsert_user_achievements_batch(conn, user_achievements_batch)
-
-                conn.commit()
-                logger.info(f"Batch saved successfully at index {i}/{len(steam_ids)}.")
-
-            except Exception as e:
-                conn.rollback()
-                logger.error(f"Error saving batch at index {i}: {e}. Attempting individual fallback...")
-            finally:
-                users_status_batch.clear()
-                user_games_batch.clear()
-                user_achievements_batch.clear()
-
-        time.sleep(1)
 
         has_public_games = False
         has_public_achievements = False
@@ -339,11 +318,39 @@ def sync_users(conn, api_key, MAX_USERS:int = 300, BATCH_SIZE: int = 100):
                 "has_public_achievements": has_public_achievements,
                 "games_fetched": True
             })
+        
+            time.sleep(1)
 
         except Exception as e:
             print("\r\033[K", end="")
             logger.warning(f"Error fetching API data for user {steam_id}: {e}")
             continue
+
+        finally:
+            if i % BATCH_SIZE == 0 or i == len(steam_ids):
+                print("\r\033[K", end="")
+                try:
+                    if users_status_batch:
+                        loader.update_users_status_batch(conn, users_status_batch)
+        
+                    if user_games_batch:
+                        loader.upsert_user_games_batch(conn, user_games_batch)
+        
+                    if user_achievements_batch:
+                        loader.upsert_user_achievements_batch(conn, user_achievements_batch)
+        
+                    conn.commit()
+                    logger.info(f"Batch saved successfully at index {i}/{len(steam_ids)}.")
+                    users_status_batch.clear()
+                    user_games_batch.clear()
+                    user_achievements_batch.clear()
+
+                except Exception as e:
+                    conn.rollback()
+                    logger.error(f"Error saving batch at index {i}: {e}. Attempting individual fallback...")
+                    users_status_batch.clear()
+                    user_games_batch.clear()
+                    user_achievements_batch.clear()
 
     logger.info("Users sync completed.")
 
