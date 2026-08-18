@@ -272,14 +272,21 @@ async def fetch_achievements_async(session, api_key, steam_id, app_id, semaphore
                         await asyncio.sleep(backoff)
                         continue
 
-                    if resp.status in (400, 403, 500):
-                        return None
+                    if resp.status == 403:
+                        return [], "private", app_id
+
+                    if resp.status in (400, 500):
+                        return [], "no achievements", app_id
+
                     if resp.status == 200:
                         data = await resp.json()
                         playerstats = data.get("playerstats", {})
                         if playerstats.get("success"):
-                            return transform_user_achievements(playerstats, app_id)
-                        return None
+                            transformed = transform_user_achievements(playerstats, app_id, steam_id)
+                            status = "success" if transformed else "no achievements"
+                            return transformed, status, app_id
+
+                        return [], "no achievements", app_id
 
             except Exception as e:
                 logger.debug(
@@ -287,7 +294,7 @@ async def fetch_achievements_async(session, api_key, steam_id, app_id, semaphore
                 )
                 await asyncio.sleep(1)
 
-        return None
+        return [], "no achievements", app_id
 
 async def fetch_user_achievements_concurrently(api_key, steam_id, game_ids):
     MAX_REQUESTS = 3
@@ -300,8 +307,15 @@ async def fetch_user_achievements_concurrently(api_key, steam_id, game_ids):
         ]
         results = await asyncio.gather(*tasks)
 
-    achievements = [item for sublist in results if sublist for item in sublist]
-    return achievements
+    all_achievements = []
+    achievements_by_game = {}
+
+    for achievements, status, app_id in results:
+        achievements_by_game[app_id] = status
+        if achievements:
+            all_achievements.extend(achievements)
+
+    return all_achievements, achievements_by_game
 
 def get_player_summaries(api_key: str, steam_ids: list):
     """ Fetches summaries for a list of users. """
@@ -883,24 +897,26 @@ def transform_owned_games(games, user):
 
     return rows
 
-def transform_user_achievements(achievements_list, app_id):
+def transform_user_achievements(playerstats, app_id, steam_id=None):
     """
-    Transforms users achievements
+    Transforms user achievements from Steam API playerstats object.
     """
-    if not achievements_list:
-        return None
+    achievements = playerstats.get("achievements")
+    if not achievements:
+        return []
 
-    steam_id = achievements_list.get("steamID")
     all_rows = []
 
-    for achievement in achievements_list.get("achievements", {}):
+    for achievement in achievements:
         if achievement.get("achieved", 0) == 0:
             continue
         
-        achievement_key = achievement.get("apiname", None)
-        unlock_time = achievement.get("unlocktime", None)
-        if unlock_time:
-            unlock_time = datetime.fromtimestamp(unlock_time)
+        achievement_key = achievement.get("apiname")
+        unlock_timestamp = achievement.get("unlocktime")
+        
+        unlock_time = None
+        if unlock_timestamp > 0:
+            unlock_time = datetime.fromtimestamp(unlock_timestamp)
 
         all_rows.append({
             "steam_id": steam_id,
