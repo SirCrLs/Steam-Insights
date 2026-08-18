@@ -299,30 +299,32 @@ def upsert_user_games_batch(conn, user_games_rows):
         for app_id in {row["app_id"] for row in user_games_rows}
     ]
 
-    # Insert games that dont exist on DB
+    # Insert games that don't exist on DB
     games_query = """
         INSERT INTO games (app_id, name)
         VALUES (%(app_id)s, 'Not in DB')
         ON CONFLICT (app_id) DO NOTHING;
     """
 
-    # Insert User games
     user_games_query = """
         INSERT INTO user_games (
             steam_id, 
             app_id, 
             playtime_forever, 
-            playtime_2weeks
+            playtime_2weeks,
+            achievements_status
         )
         VALUES (
             %(steam_id)s, 
             %(app_id)s, 
             %(playtime_forever)s, 
-            %(playtime_2weeks)s
+            %(playtime_2weeks)s,
+            %(achievements_status)s
         )   
         ON CONFLICT (steam_id, app_id) DO UPDATE SET
             playtime_forever = EXCLUDED.playtime_forever,
-            playtime_2weeks = EXCLUDED.playtime_2weeks;
+            playtime_2weeks = EXCLUDED.playtime_2weeks,
+            achievements_status = EXCLUDED.achievements_status;
     """
 
     with conn.cursor() as cursor:
