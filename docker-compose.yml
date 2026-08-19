@@ -45,5 +45,15 @@ services:
       - .env
     ports:
       - "3838:3838"
+  crud:
+    build: ./database/crud
+    container_name: steam-crud
+    depends_on:
+      postgres:
+        condition: service_healthy
+    env_file:
+      - .env
+    ports:
+      - "4000:4000"
 volumes:
   postgres_data:
