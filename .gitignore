@@ -5,6 +5,8 @@ __pycache__/
 *$py.class
 *.so
 test.py
+test.scala
+.metals/
 .venv/
 venv/
 env/
@@ -77,3 +79,13 @@ seed_steam_ids.txt
 *steamspy*.json
 merged_output.json
 page_*.json
+
+# Scala
+database/crud/target/
+database/crud/project/target/
+database/crud/project/project/
+
+database/crud/.bloop/
+database/crud/.metals/
+database/crud/.vscode/
+database/crud/metals.sbt
