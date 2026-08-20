@@ -45,7 +45,6 @@ postgres_data/
 *.dump
 *.bak
 docker-compose.override.yml
-models/
 checkpoints/
 artifacts/
 
