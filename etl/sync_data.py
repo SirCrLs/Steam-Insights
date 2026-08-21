@@ -200,38 +200,29 @@ def fetch_and_transform_all_achievements(api_key, steam_id, game_ids):
         return [], {}
 
 def verify_users(conn, api_key, max_users: int, seed_file: str):
+    raw_seed_ids = generate_steam_seed_ids(api_key, max_users, seed_file)
+    if not raw_seed_ids:
+        logger.error(f"SteamIDs could not be loaded from {seed_file}.")
+        return []
+
+    unique_seed_ids = list(set(raw_seed_ids))[:max_users]
+    logger.info(f"{len(unique_seed_ids)} unique SteamIDs loaded from seed file.")
+
+    query = """
+        SELECT seed.id
+        FROM UNNEST(%s::BIGINT[]) AS seed(id)
+        LEFT JOIN users u ON u.steam_id = seed.id
+        WHERE u.steam_id IS NULL 
+           OR u.games_fetched IS NULL;
+    """
+
     with conn.cursor() as cur:
-        cur.execute("SELECT steam_id, games_fetched FROM users;")
-        db_rows = cur.fetchall()
+        cur.execute(query, (unique_seed_ids,))
+        valid_steam_ids = [row[0] for row in cur.fetchall()]
 
-    existing_db_ids = set(row[0] for row in db_rows)
-    total_db_count = len(existing_db_ids)
-
-    logger.info(f"{total_db_count} total users fetched from DB.")
-
-    status_map = {row[0]: row[1] for row in db_rows}
-    all_candidate_ids = list(existing_db_ids)[:max_users]
-
-    if total_db_count < max_users:
-        needed = max_users - total_db_count
-        logger.info(f"Total DB users ({total_db_count}) < max_users ({max_users}). Fetching {needed} remaining from seed file.")
-
-        seed_ids = generate_steam_seed_ids(api_key, max_users, seed_file)
-
-        if seed_ids is None:
-            logger.error(f"SteamIDs could not be loaded from {seed_file}.")
-        else:
-            current_set = set(all_candidate_ids)
-            new_ids = [sid for sid in seed_ids if sid not in existing_db_ids and sid not in current_set]
-            
-            all_candidate_ids.extend(new_ids[:needed])
-
-    valid_steam_ids = [
-        sid for sid in all_candidate_ids 
-        if status_map.get(sid) is None
-    ]
-
-    logger.info(f"{len(valid_steam_ids)} valid pending users (games_fetched IS NULL) ready to process.")
+    logger.info(
+        f"{len(valid_steam_ids)} valid pending users ready to process."
+    )
 
     return valid_steam_ids
 
@@ -270,7 +261,7 @@ def sync_users(conn, api_key, MAX_USERS:int = 300, BATCH_SIZE: int = 100):
             owned_response = get_owned_games(api_key, steam_id)
             games_data = owned_response.get("response", {})
 
-            if "games" not in games_data:
+            if not games_data:
                 time.sleep(1)
                 print("\r\033[K", end="")
                 logger.warning(f"User {i}: {steam_id} has no public games or games section is private...")
