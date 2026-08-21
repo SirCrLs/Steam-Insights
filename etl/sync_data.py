@@ -261,7 +261,6 @@ def sync_users(conn, api_key, MAX_USERS:int = 300, BATCH_SIZE: int = 100):
         conn.commit()
 
     for i, steam_id in enumerate(steam_ids, start=1):
-
         has_public_games = False
         has_public_achievements = False
 
@@ -282,75 +281,69 @@ def sync_users(conn, api_key, MAX_USERS:int = 300, BATCH_SIZE: int = 100):
                     "has_public_achievements": False,
                     "games_fetched": True 
                 })
-                continue
+            else:
+                raw_games = games_data.get("games", [])
+                has_public_games = True
 
-            raw_games = games_data.get("games", [])
-            has_public_games = True
+                if raw_games:
+                    user_games_rows = transform_owned_games(raw_games, steam_id)
+                    games_by_id = {game["app_id"]: game for game in user_games_rows}
+                    
+                    game_ids = []
+                    for game in user_games_rows:
+                        if game.get("playtime_forever", 0) != 0:
+                            game_ids.append(game.get("app_id"))
+                            game["achievements_status"] = "pending"
+                        else:
+                            game["achievements_status"] = "no achievements"
 
-            if raw_games:
-                user_games_rows = transform_owned_games(raw_games, steam_id)
-                
-                games_by_id = {game["app_id"]: game for game in user_games_rows}
-                
-                game_ids = []
-                for game in user_games_rows:
-                    if game.get("playtime_forever", 0) != 0:
-                        game_ids.append(game.get("app_id"))
-                        game["achievements_status"] = "pending"
-                    else:
-                        game["achievements_status"] = "no achievements"
+                    user_achievements, achievements_by_game = fetch_and_transform_all_achievements(api_key, steam_id, game_ids)
+                    
+                    if user_achievements:
+                        has_public_achievements = True
+                        user_achievements_batch.extend(user_achievements)
 
-                user_achievements, achievements_by_game = fetch_and_transform_all_achievements(api_key, steam_id, game_ids)
-                
-                if user_achievements:
-                    has_public_achievements = True
-                    user_achievements_batch.extend(user_achievements)
+                    for app_id in game_ids:
+                        if app_id in games_by_id:
+                            games_by_id[app_id]["achievements_status"] = achievements_by_game.get(app_id, "no achievements")
 
-                for app_id in game_ids:
-                    if app_id in games_by_id:
-                        games_by_id[app_id]["achievements_status"] = achievements_by_game.get(app_id, "no achievements")
+                    user_games_batch.extend(user_games_rows)
 
-                user_games_batch.extend(user_games_rows)
+                users_status_batch.append({
+                    "steam_id": steam_id,
+                    "has_public_games": has_public_games,
+                    "has_public_achievements": has_public_achievements,
+                    "games_fetched": True
+                })
 
-            users_status_batch.append({
-                "steam_id": steam_id,
-                "has_public_games": has_public_games,
-                "has_public_achievements": has_public_achievements,
-                "games_fetched": True
-            })
-        
             time.sleep(1)
 
         except Exception as e:
             print("\r\033[K", end="")
             logger.warning(f"Error fetching API data for user {steam_id}: {e}")
-            continue
 
-        finally:
-            if i % BATCH_SIZE == 0 or i == len(steam_ids):
-                print("\r\033[K", end="")
-                try:
-                    if users_status_batch:
-                        loader.update_users_status_batch(conn, users_status_batch)
-        
-                    if user_games_batch:
-                        loader.upsert_user_games_batch(conn, user_games_batch)
-        
-                    if user_achievements_batch:
-                        loader.upsert_user_achievements_batch(conn, user_achievements_batch)
-        
-                    conn.commit()
-                    logger.info(f"Batch saved successfully at index {i}/{len(steam_ids)}.")
-                    users_status_batch.clear()
-                    user_games_batch.clear()
-                    user_achievements_batch.clear()
+        if i % BATCH_SIZE == 0 or i == len(steam_ids):
+            print("\r\033[K", end="")
+            try:
+                if users_status_batch:
+                    loader.update_users_status_batch(conn, users_status_batch)
 
-                except Exception as e:
-                    conn.rollback()
-                    logger.error(f"Error saving batch at index {i}: {e}. Attempting individual fallback...")
-                    users_status_batch.clear()
-                    user_games_batch.clear()
-                    user_achievements_batch.clear()
+                if user_games_batch:
+                    loader.upsert_user_games_batch(conn, user_games_batch)
+
+                if user_achievements_batch:
+                    loader.upsert_user_achievements_batch(conn, user_achievements_batch)
+
+                conn.commit()
+                logger.info(f"Batch saved successfully at index {i}/{len(steam_ids)}.")
+
+                users_status_batch.clear()
+                user_games_batch.clear()
+                user_achievements_batch.clear()
+
+            except Exception as e:
+                conn.rollback()
+                logger.error(f"Error saving batch at index {i}: {e}.")
 
     logger.info("Users sync completed.")
 
