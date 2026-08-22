@@ -2,7 +2,6 @@ package models
 
 import java.time.{LocalDate, LocalDateTime}
 import io.circe.Codec
-import io.circe.generic.semiauto.deriveCodec
 
 final case class Game(
   appId: Int,
@@ -36,8 +35,4 @@ final case class Game(
   totalReviews: Option[Int],
   approvalRate: Option[BigDecimal],
   fetchedAt: Option[LocalDateTime]
-)
-
-object Game {
-  implicit val gameCodec: Codec.AsObject[Game] = deriveCodec[Game]
-}
+) derives Codec.AsObject
