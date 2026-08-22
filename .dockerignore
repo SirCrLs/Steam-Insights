@@ -45,3 +45,5 @@ docs/
 metals.sbt
 .git/
 *.md
+database/crud/project/metals.sbt
+.bloop/

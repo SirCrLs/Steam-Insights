@@ -87,4 +87,6 @@ database/crud/project/project/
 database/crud/.bloop/
 database/crud/.metals/
 database/crud/.vscode/
-database/crud/metals.sbt
+database/crud/project/metals.sbt
+
+.bloop/
