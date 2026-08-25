@@ -90,3 +90,5 @@ database/crud/.vscode/
 database/crud/project/metals.sbt
 
 .bloop/
+.scala-build/
+.bsp/

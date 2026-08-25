@@ -1,7 +1,10 @@
 package repository
 
 import models.Game
-import doobie.*, doobie.implicits.*, doobie.postgres.implicits.*
+import doobie.*
+import doobie.implicits.*
+import doobie.postgres.implicits.*
+import java.time.{LocalDate, LocalDateTime}
 
 object GameRepository:
 
