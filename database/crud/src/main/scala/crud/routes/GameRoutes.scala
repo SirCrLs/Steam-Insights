@@ -11,16 +11,12 @@ import org.http4s.server.Router
 import doobie.implicits.toConnectionIOOps
 import doobie.util.transactor.Transactor
 import org.http4s.circe.CirceEntityEncoder.*
+import org.http4s.circe.CirceEntityDecoder.*
 
 import models.Game
 import repository.GameRepository
 
 class GameRoutes[F[_]: Async](gameRepository: GameRepository, xa : Transactor[F]) extends Http4sDsl[F]:
-
-  // decode/code JSON 
-  implicit val gameEntityEncoder: EntityEncoder[F, Game] = jsonEncoderOf[F, Game]
-  implicit val gameListEntityEncoder: EntityEncoder[F, List[Game]] = jsonEncoderOf[F, List[Game]]
-  implicit val gameEntityDecoder: EntityDecoder[F, Game] = jsonOf[F, Game]
 
   val routes: HttpRoutes[F] = HttpRoutes.of[F]:
 
