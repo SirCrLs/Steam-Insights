@@ -13,7 +13,7 @@ class AchievementRepository:
       FROM achievements
     """.query[Achievement].to[List]
 
-  def findById(appId: Int): ConnectionIO[Option[Achievement]]= 
+  def findById(appId: Int): ConnectionIO[List[Achievement]]= 
     sql"""
       SELECT 
         app_id, 
@@ -23,7 +23,7 @@ class AchievementRepository:
         global_unlock_pct
       FROM achievements
       WHERE app_id = $appId
-    """.query[Achievement].option
+    """.query[Achievement].to[List]
 
   def create(achievement: Achievement): ConnectionIO[Int] = 
     sql"""
