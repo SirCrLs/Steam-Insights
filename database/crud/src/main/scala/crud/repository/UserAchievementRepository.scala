@@ -6,7 +6,7 @@ import doobie.implicits.*
 import doobie.postgres.implicits.*
 import java.time.LocalDate
 
-object UserAchievementRepository:
+class UserAchievementRepository:
 
   def findAllBySteamId(steamId: Long): ConnectionIO[List[UserAchievement]] =
     sql"""

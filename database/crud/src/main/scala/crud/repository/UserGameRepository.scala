@@ -5,7 +5,7 @@ import doobie.*
 import doobie.implicits.*
 import doobie.postgres.implicits.*
 
-object UserGameRepository:
+class UserGameRepository:
   
   def findGamesBySteamId(steamId: Long): ConnectionIO[List[UserGame]] =
     sql"""
