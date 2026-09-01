@@ -11,16 +11,12 @@ import org.http4s.server.Router
 import doobie.implicits.toConnectionIOOps
 import doobie.util.transactor.Transactor
 import org.http4s.circe.CirceEntityEncoder.*
+import org.http4s.circe.CirceEntityDecoder.*
 
 import models.Achievement
 import repository.AchievementRepository
 
 class AchievementRoutes[F[_]: Async](achRepository: AchievementRepository, xa : Transactor[F]) extends Http4sDsl[F]:
-
-  // decode/code JSON 
-  implicit val achievementEntityEncoder: EntityEncoder[F, Achievement] = jsonEncoderOf[F, Achievement]
-  implicit val achievementListEntityEncoder: EntityEncoder[F, List[Achievement]] = jsonEncoderOf[F, List[Achievement]]
-  implicit val achievementEntityDecoder: EntityDecoder[F, Achievement] = jsonOf[F, Achievement]
 
   val routes: HttpRoutes[F] = HttpRoutes.of[F]:
     //GET all achievements
