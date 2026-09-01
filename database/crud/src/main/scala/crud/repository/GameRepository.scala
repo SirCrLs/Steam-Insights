@@ -6,7 +6,7 @@ import doobie.implicits.*
 import doobie.postgres.implicits.*
 import java.time.{LocalDate, LocalDateTime}
 
-class GameRepository[F[_]](xa : Transactor[F]):
+class GameRepository:
 
   def findAll: ConnectionIO[List[Game]] =
     sql"""

@@ -5,7 +5,7 @@ import doobie.*
 import doobie.implicits.*
 import doobie.postgres.implicits.*
 
-object AchievementRepository:
+class AchievementRepository:
   
   def findAll: ConnectionIO[List[Achievement]] =
     sql"""

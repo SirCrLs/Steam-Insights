@@ -15,7 +15,7 @@ import org.http4s.circe.CirceEntityEncoder.*
 import models.Game
 import repository.GameRepository
 
-class GameRoutes[F[_]: Async](gameRepository: GameRepository[F], xa : Transactor[F]) extends Http4sDsl[F]:
+class GameRoutes[F[_]: Async](gameRepository: GameRepository, xa : Transactor[F]) extends Http4sDsl[F]:
 
   // decode/code JSON 
   implicit val gameEntityEncoder: EntityEncoder[F, Game] = jsonEncoderOf[F, Game]
