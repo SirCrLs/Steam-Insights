@@ -1,5 +1,6 @@
 package routes
 
+import cats.effect.IO
 import cats.effect.Async
 import cats.syntax.all.*
 import io.circe.syntax.*
@@ -20,12 +21,14 @@ class GameRoutes[F[_]: Async](gameRepository: GameRepository, xa : Transactor[F]
 
   val routes: HttpRoutes[F] = HttpRoutes.of[F]:
 
-    // GET all games
-    case GET -> Root => 
-      for
-        games <- gameRepository.findAll.transact(xa)
-        resp <- Ok(games)
-      yield resp
+    case GET -> Root =>
+      gameRepository.findAll.transact(xa).attempt.flatMap {
+        case Right(games) =>
+          Ok(games)
+        case Left(e) =>
+          e.printStackTrace()  // Remove IO() wrapper
+          InternalServerError(s"Error: ${e.getMessage}")      
+      }
 
     // GET games by id
     case GET -> Root / IntVar(id) =>

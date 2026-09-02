@@ -20,12 +20,13 @@ lazy val root = (project in file("."))
         "org.tpolecat" %% "doobie-postgres-circe" % doobieVersion
     ),
     assembly / assemblyMergeStrategy := {
-      case PathList("module-info.class")            => MergeStrategy.discard
-      case x if x.endsWith("module-info.class")      => MergeStrategy.discard
-      case PathList("META-INF", xs @ _*)              => MergeStrategy.discard
-      case x =>
-        val oldStrategy = (assembly / assemblyMergeStrategy).value
-        oldStrategy(x)
+        case PathList("module-info.class")        => MergeStrategy.discard
+        case x if x.endsWith("module-info.class") => MergeStrategy.discard
+        case PathList("META-INF", "services", xs @ _*) => MergeStrategy.concat
+        case PathList("META-INF", xs @ _*)        => MergeStrategy.discard
+        case x =>
+            val oldStrategy = (assembly / assemblyMergeStrategy).value
+            oldStrategy(x)
     },
     scalacOptions += "-Xmax-inlines:64"
 )
