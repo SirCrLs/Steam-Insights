@@ -8,12 +8,14 @@ import java.time.{LocalDate, LocalDateTime}
 
 class UserRepository:
 
-  def findAll: ConnectionIO[List[User]] =
+  def findAll(offset: Int = 0): ConnectionIO[List[User]] =
     sql"""
       SELECT 
         steam_id, persona_name, profile_url, avatar_url, country_code, account_created,
         is_public, fetched_at, has_public_games, has_public_achievements, games_fetched
       FROM users
+      ORDER BY steam_id ASC
+      LIMIT 100 OFFSET $offset
     """.query[User].to[List]
 
   def findById(steamId: Long): ConnectionIO[Option[User]] = 
