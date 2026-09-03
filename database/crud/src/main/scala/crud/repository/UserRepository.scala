@@ -8,21 +8,24 @@ import java.time.{LocalDate, LocalDateTime}
 
 class UserRepository:
 
-  def findAll(offset: Int = 0): ConnectionIO[List[User]] =
+  def findAll(limit: Int, offset: Int): ConnectionIO[List[User]] =
     sql"""
       SELECT 
         steam_id, persona_name, profile_url, avatar_url, country_code, account_created,
-        is_public, fetched_at, has_public_games, has_public_achievements, games_fetched
+        is_public, has_public_games, has_public_achievements, games_fetched, fetched_at
       FROM users
-      ORDER BY steam_id ASC
+      ORDER BY steam_id
       LIMIT 100 OFFSET $offset
     """.query[User].to[List]
+
+  def count: ConnectionIO[Long] =
+    sql"SELECT COUNT(*) FROM users".query[Long].unique
 
   def findById(steamId: Long): ConnectionIO[Option[User]] = 
     sql"""
       SELECT
         steam_id, persona_name, profile_url, avatar_url, country_code, account_created,
-        is_public, fetched_at, has_public_games, has_public_achievements, games_fetched
+        is_public,has_public_games, has_public_achievements, games_fetched, fetched_at
       FROM users
       WHERE steam_id = $steamId
     """.query[User].option
@@ -31,7 +34,7 @@ class UserRepository:
     sql"""
       INSERT INTO users (
         steam_id, persona_name, profile_url, avatar_url, country_code, account_created,
-        is_public, fetched_at, has_public_games, has_public_achievements, games_fetched
+        is_public, has_public_games, has_public_achievements, games_fetched,  fetched_at
       ) VALUES (
         ${user.steamId}, ${user.personaName}, ${user.profileUrl}, ${user.avatarUrl},
         ${user.countryCode}, ${user.accountCreated}, ${user.isPublic}, ${user.fetchedAt},
@@ -48,10 +51,10 @@ class UserRepository:
         country_code = ${user.countryCode}, 
         account_created = ${user.accountCreated},
         is_public = ${user.isPublic}, 
-        fetched_at = ${user.fetchedAt}, 
         has_public_games = ${user.hasPublicGames}, 
         has_public_achievements = ${user.hasPublicAchievements}, 
-        games_fetched = ${user.gamesFetched}
+        games_fetched = ${user.gamesFetched},
+        fetched_at = ${user.fetchedAt}, 
       WHERE steam_id = $steamId
     """.update.run
 

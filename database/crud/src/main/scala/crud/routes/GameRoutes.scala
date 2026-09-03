@@ -18,20 +18,22 @@ import models.Game
 import repository.GameRepository
 
 import org.http4s.dsl.impl.OptionalQueryParamDecoderMatcher
+
+object LimitParam extends OptionalQueryParamDecoderMatcher[Int]("limit")
 object OffsetParam extends OptionalQueryParamDecoderMatcher[Int]("offset")
 
 class GameRoutes[F[_]: Async](gameRepository: GameRepository, xa : Transactor[F]) extends Http4sDsl[F]:
 
   val routes: HttpRoutes[F] = HttpRoutes.of[F]:
     // GET all games with offset
-    case GET -> Root / "games" :? OffsetParam(offset) =>
-      gameRepository.findAll(offset.getOrElse(0)).transact(xa).attempt.flatMap {
-        case Right(games) =>
-          Ok(games)
-        case Left(e) =>
-          e.printStackTrace()  
-          InternalServerError(s"Error: ${e.getMessage}")
-      }
+    case GET -> Root :? LimitParam(limitOpt) +& OffsetParam(offsetOpt) =>
+      val limit = limitOpt.getOrElse(100)
+      val offset = offsetOpt.getOrElse(0)
+      for
+        games <- gameRepository.findAll(limit, offset).transact(xa)
+        total <- gameRepository.count.transact(xa)
+        resp  <- Ok(Map("total" -> total.asJson, "games" -> games.asJson))
+      yield resp
 
     // GET games by id
     case GET -> Root / IntVar(id) =>
@@ -66,10 +68,12 @@ class GameRoutes[F[_]: Async](gameRepository: GameRepository, xa : Transactor[F]
 
     // DELETE game by id
     case DELETE -> Root / IntVar(id) =>
-      for
-        rowsDeleted <- gameRepository.delete(id).transact(xa)
-        resp <- if rowsDeleted > 0 then
-          NoContent()
-        else
-          NotFound(Map("error" -> s"Delete failed: game $id does not exist"))
-      yield resp
+      gameRepository.delete(id).transact(xa).attempt.flatMap {
+        case Right(rowsAffected) if rowsAffected > 0 => 
+          Ok(s"Game $id deleted successfully")
+        case Right(_) => 
+          NotFound(s"Game $id not found")
+        case Left(error) =>
+          error.printStackTrace()
+          InternalServerError(s"Error deleting game: ${error.getMessage}")
+      }
