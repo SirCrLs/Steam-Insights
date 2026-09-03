@@ -8,7 +8,7 @@ import java.time.{LocalDate, LocalDateTime}
 
 class GameRepository:
 
-  def findAll(offset: Int = 0): ConnectionIO[List[Game]] =
+  def findAll(limit: Int, offset: Int): ConnectionIO[List[Game]] =
     sql"""
       SELECT 
         app_id, name, short_description, genres, categories, supported_languages, 
@@ -20,9 +20,12 @@ class GameRepository:
         owners_min, owners_max, positive_reviews, negative_reviews, total_reviews, 
         approval_rate, fetched_at
       FROM games
-      ORDER BY app_id ASC
-      LIMIT 100 OFFSET $offset
+      ORDER BY app_id
+      LIMIT $limit OFFSET $offset
     """.query[Game].to[List]
+
+  def count: ConnectionIO[Long] =
+    sql"SELECT COUNT(*) FROM games".query[Long].unique
 
   def findById(appId: Int): ConnectionIO[Option[Game]] =
     sql"""

@@ -34,20 +34,24 @@ class UserRoutes[F[_]: Async](
   val routes: HttpRoutes[F] = HttpRoutes.of[F]:
     // ==   USERS   ==
     //GET all users
-    case GET -> Root :? OffsetParam(offset) =>
+    case GET -> Root :? LimitParam(limitOpt) +& OffsetParam(offsetOpt) =>
+      val limit = limitOpt.getOrElse(100)
+      val offset = offsetOpt.getOrElse(0)
       for
-        users <- userRepository.findAll(offset.getOrElse(0)).transact(xa)
-        resp  <- Ok(users)
+        users <- userRepository.findAll(limit, offset).transact(xa)
+        total <- userRepository.count.transact(xa)
+        resp  <- Ok(Map("total" -> total.asJson, "users" -> users.asJson))
       yield resp
 
     //GET user by steamid
     case GET -> Root / LongVar(steamid) =>
-      for
-        maybeUser <- userRepository.findById(steamid).transact(xa)
-        resp <- maybeUser match
-          case Some(user) => Ok(user)
-          case None => NotFound(s"User not found: steamID = $steamid")
-      yield resp
+      userRepository.findById(steamid).transact(xa).attempt.flatMap {
+        case Right(Some(user)) => Ok(user)
+        case Right(None)       => NotFound(s"User not found: steamID = $steamid")
+        case Left(error)       => 
+          error.printStackTrace()
+          InternalServerError(s"Database mapping error: ${error.getMessage}")
+      }
 
     //POST create user
     case req @ POST -> Root =>
