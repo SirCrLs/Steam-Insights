@@ -10,8 +10,10 @@ import org.http4s.dsl.io.*
 import org.http4s.implicits.*
 import doobie.implicits.*
 import crud.db.DatabaseConfig
+import auth.ApiKeyMiddleware
 import routes.{GameRoutes, UserRoutes, AchievementRoutes}
 import repository.{GameRepository, UserRepository, UserGameRepository, UserAchievementRepository, AchievementRepository}
+import org.http4s.HttpApp
 
 object Main extends IOApp:
 
@@ -50,16 +52,20 @@ object Main extends IOApp:
 
       val achievementRoutes = new AchievementRoutes[IO](achievementRepository, xa).routes
 
-      // if self hosted, routes would be:
-      // http://localhost:4000/api/games
-      // http://localhost:4000/api/users
-      // http://localhost:4000/api/achievements
+      val apiRoutes = Router(
+        "/games"        -> gameRoutes,
+        "/users"        -> userRoutes,
+        "/achievements" -> achievementRoutes
+      )
 
-      val allRoutes = Router(
-        "/" -> healthRoutes(xa),
-        "/api/games" -> gameRoutes,
-        "/api/users" -> userRoutes,
-        "/api/achievements" -> achievementRoutes
+      // if self hosted, base routes would be:
+      // http://localhost:4000/api/games
+
+      val protectedApiRoutes = ApiKeyMiddleware(apiRoutes)
+
+      val allRoutes: HttpApp[IO] = Router(
+        "/" -> healthRoutes(xa), // Public
+        "/api" -> protectedApiRoutes // Protected
       ).orNotFound
 
       val appWithErrorLogging = ErrorHandling(allRoutes)
