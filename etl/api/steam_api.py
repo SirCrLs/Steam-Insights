@@ -799,12 +799,15 @@ def transform_game_details(app_id, data):
         return {
             "app_id": int(app_id), "name": None, "short_description": "API call failed",
             "genres": None, "categories": None, "supported_languages": None, "header_image": None,
-            "pc_requirements_minimum": None,"pc_requirements_recommended": None,
-            "processor": [None, None], "graphics": [ None, None],"ram_requirement": [None,None],      
-            "storage_requirement": [None, None], "developers": None,"is_on_windows": None,"is_on_mac": None,
-            "is_on_linux": None,"metacritic_score": None, "release_date": None,
-            "price_usd": None,"is_free": None,"rating": None, "total_achievements":None, "recommendations": None,
-            "fetched_at": datetime.now() 
+            "pc_requirements_minimum": None, "pc_requirements_recommended": None,
+            "processor_minimum": None, "processor_recommended": None,
+            "graphics_minimum": None, "graphics_recommended": None,
+            "ram_minimum_gb": None, "ram_recommended_gb": None,
+            "storage_minimum_gb": None, "storage_recommended_gb": None,
+            "developers": None, "is_on_windows": None, "is_on_mac": None,
+            "is_on_linux": None, "metacritic_score": None, "release_date": None,
+            "price_usd": None, "is_free": None, "rating": None, "total_achievements": None, "recommendations": None,
+            "fetched_at": datetime.now()
         }
 
     short_description = data.get("short_description", None)
@@ -826,13 +829,16 @@ def transform_game_details(app_id, data):
         "header_image": data.get("header_image"),
         "pc_requirements_minimum": data.get("pc_requirements").get("minimum"),
         "pc_requirements_recommended": data.get("pc_requirements").get("recommended"),
-        
-        # Index [0] = minimum, [1] = recommended
-        "processor": [specs_min.get("processor", None), specs_rec.get("processor", None)], 
-        "graphics": [specs_min.get("graphics", None), specs_rec.get("graphics", None)],                     
-        "ram_requirement": [specs_min.get("memory_gb", None), specs_rec.get("memory_gb", None)],      
-        "storage_requirement": [specs_min.get("storage_gb", None), specs_rec.get("storage_gb", None)], 
-        
+
+        "processor_minimum": specs_min.get("processor", None),
+        "processor_recommended": specs_rec.get("processor", None),
+        "graphics_minimum": specs_min.get("graphics", None),
+        "graphics_recommended": specs_rec.get("graphics", None),
+        "ram_minimum_gb": specs_min.get("memory_gb", None),
+        "ram_recommended_gb": specs_rec.get("memory_gb", None),
+        "storage_minimum_gb": specs_min.get("storage_gb", None),
+        "storage_recommended_gb": specs_rec.get("storage_gb", None),
+
         "developers": data.get("developers", None),
         "is_on_windows": platforms.get("windows", False),
         "is_on_mac": platforms.get("mac", False),
@@ -841,7 +847,7 @@ def transform_game_details(app_id, data):
         "release_date": release_date,
         "price_usd": data.get("price_overview", 0),
         "is_free": data.get("is_free", False),
-        "rating": data.get("ratings", None), 
+        "rating": data.get("ratings", None),
         "total_achievements": data.get("achievements", {}).get("total", 0),
         "recommendations": data.get("recommendations"),
 

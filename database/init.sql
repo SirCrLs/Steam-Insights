@@ -13,12 +13,16 @@ CREATE TABLE games (
     header_image TEXT,
     pc_requirements_minimum TEXT,
     pc_requirements_recommended TEXT,
-    -- 0 for minimum, 1 for recommended
-    processor TEXT[],
-    graphics TEXT[],
-    ram_requirement SMALLINT[], 
-    storage_requirement SMALLINT[],
-    
+
+    processor_minimum TEXT,
+    processor_recommended TEXT,
+    graphics_minimum TEXT,
+    graphics_recommended TEXT,
+    ram_minimum_gb SMALLINT,
+    ram_recommended_gb SMALLINT,
+    storage_minimum_gb SMALLINT,
+    storage_recommended_gb SMALLINT,
+
     developers TEXT,
     is_on_windows BOOLEAN,
     is_on_mac BOOLEAN,
