@@ -50,6 +50,11 @@ object Main extends IOApp:
 
       val achievementRoutes = new AchievementRoutes[IO](achievementRepository, xa).routes
 
+      // if self hosted, routes would be:
+      // http://localhost:4000/api/games
+      // http://localhost:4000/api/users
+      // http://localhost:4000/api/achievements
+
       val allRoutes = Router(
         "/" -> healthRoutes(xa),
         "/api/games" -> gameRoutes,

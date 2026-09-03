@@ -19,18 +19,27 @@ import repository.AchievementRepository
 class AchievementRoutes[F[_]: Async](achRepository: AchievementRepository, xa : Transactor[F]) extends Http4sDsl[F]:
 
   val routes: HttpRoutes[F] = HttpRoutes.of[F]:
-    // GET /achievements (o /achievements?offset=100)
-    case GET -> Root :? OffsetParam(offset) =>
+    // Routes in localhost (they might change if you host it)
+    //
+
+    // GET obtain all achievements
+    case GET -> Root :? LimitParam(limitOpt) +& OffsetParam(offsetOpt) =>
+      val limit = limitOpt.getOrElse(100)
+      val offset = offsetOpt.getOrElse(0)
       for
-        achievements <- achRepository.findAll(offset.getOrElse(0)).transact(xa)
-        resp <- Ok(achievements)
+        achievements <- achRepository.findAll(limit, offset).transact(xa)
+        total <- achRepository.count.transact(xa)
+        resp  <- Ok(Map("total" -> total.asJson, "achievements" -> achievements.asJson))
       yield resp
 
-    // GET /achievements/123 (o /achievements/123?offset=100)
-    case GET -> Root / IntVar(id) :? OffsetParam(offset) =>
+    // GET obtain all achievements from a game
+    case GET -> Root / IntVar(id) :? LimitParam(limitOpt) +& OffsetParam(offsetOpt) =>
+      val limit = limitOpt.getOrElse(100)
+      val offset = offsetOpt.getOrElse(0)
       for
-        achievements <- achRepository.findByAppId(id, offset.getOrElse(0)).transact(xa)
-        resp <- Ok(achievements)
+        achievements <- achRepository.findByAppId(id, limit, offset).transact(xa)
+        total <- achRepository.countByAppId(id).transact(xa)
+        resp <- Ok(Map("total" -> total.asJson, "achievements" -> achievements.asJson))
       yield resp
 
     // POST create achievement

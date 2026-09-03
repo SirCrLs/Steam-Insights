@@ -40,7 +40,7 @@ class UserRoutes[F[_]: Async](
       for
         users <- userRepository.findAll(limit, offset).transact(xa)
         total <- userRepository.count.transact(xa)
-        resp  <- Ok(Map("total" -> total.asJson, "users" -> users.asJson))
+        resp <- Ok(Map("total" -> total.asJson, "users" -> users.asJson))
       yield resp
 
     //GET user by steamid
@@ -87,10 +87,13 @@ class UserRoutes[F[_]: Async](
 
     // ==   UserGame   ==
     // GET all games from user
-    case GET -> Root / LongVar(steamId) / GamesURL :? OffsetParam(offset) =>
+    case GET -> Root / LongVar(steamId) / GamesURL :? LimitParam(limitOpt) +& OffsetParam(offsetOpt) =>
+      val limit = limitOpt.getOrElse(100)
+      val offset = offsetOpt.getOrElse(0)
       for
-        games <- userGamesRepo.findGamesBySteamId(steamId, offset.getOrElse(0)).transact(xa)
-        resp  <- Ok(games)
+        games <- userGamesRepo.findGamesBySteamId(steamId, limit, offset).transact(xa)
+        total <- userGamesRepo.countBySteamId(steamId).transact(xa)
+        resp  <- Ok(Map("total" -> total.asJson, "games" -> games.asJson))
       yield resp
 
     // GET one game from user
@@ -126,17 +129,23 @@ class UserRoutes[F[_]: Async](
 
     // ==   UserAchievements   ==
     // GET all achievements from a user
-    case GET -> Root / LongVar(steamId) / AchievementsURL :? OffsetParam(offset) =>
+    case GET -> Root / LongVar(steamId) / AchievementsURL :? LimitParam(limitOpt) +& OffsetParam(offsetOpt) =>
+      val limit = limitOpt.getOrElse(100)
+      val offset = offsetOpt.getOrElse(0)
       for
-        achievements <- userAchievementsRepo.findAllBySteamId(steamId, offset.getOrElse(0)).transact(xa)
-        resp         <- Ok(achievements)
+        achievements <- userAchievementsRepo.findAllBySteamId(steamId, limit, offset).transact(xa)
+        total <- userAchievementsRepo.countBySteamId(steamId).transact(xa)
+        resp <- Ok(Map("total" -> total.asJson, "achievements" -> achievements.asJson))
       yield resp
 
-    // GET all achievements of user for an specific game
-    case GET -> Root / LongVar(steamId) / AchievementsURL / IntVar(appid) :? OffsetParam(offset) =>
+    // GET all achievements of user for a specific game
+    case GET -> Root / LongVar(steamId) / AchievementsURL / IntVar(appid) :? LimitParam(limitOpt) +& OffsetParam(offsetOpt) =>
+      val limit = limitOpt.getOrElse(100)
+      val offset = offsetOpt.getOrElse(0)
       for
-        achievements <- userAchievementsRepo.findBySteamIdAndAppId(steamId, appid, offset.getOrElse(0)).transact(xa)
-        resp         <- Ok(achievements)
+        achievements <- userAchievementsRepo.findBySteamIdAndAppId(steamId, appid, limit, offset).transact(xa)
+        total<- userAchievementsRepo.countBySteamIdAndAppId(steamId, appid).transact(xa)
+        resp <- Ok(Map("total" -> total.asJson, "achievements" -> achievements.asJson))
       yield resp
 
     // PUT Upsert an achievement
