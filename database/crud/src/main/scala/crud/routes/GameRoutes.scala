@@ -27,7 +27,7 @@ class GameRoutes[F[_]: Async](gameRepository: GameRepository, xa : Transactor[F]
           Ok(games)
         case Left(e) =>
           e.printStackTrace()  // Remove IO() wrapper
-          InternalServerError(s"Error: ${e.getMessage}")      
+          InternalServerError(s"Error: ${e.getMessage}")
       }
 
     // GET games by id
