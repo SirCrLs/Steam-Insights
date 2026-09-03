@@ -7,13 +7,15 @@ import doobie.postgres.implicits.*
 
 class AchievementRepository:
   
-  def findAll: ConnectionIO[List[Achievement]] =
+  def findAll(offset: Int = 0): ConnectionIO[List[Achievement]] =
     sql"""
       SELECT app_id, achievement_key, display_name, achievement_desc, global_unlock_pct
       FROM achievements
+      ORDER BY app_id ASC, achievement_key ASC
+      LIMIT 100 OFFSET $offset
     """.query[Achievement].to[List]
 
-  def findById(appId: Int): ConnectionIO[List[Achievement]]= 
+  def findByAppId(appId: Int, offset: Int = 0): ConnectionIO[List[Achievement]] = 
     sql"""
       SELECT 
         app_id, 
@@ -23,6 +25,8 @@ class AchievementRepository:
         global_unlock_pct
       FROM achievements
       WHERE app_id = $appId
+      ORDER BY achievement_key ASC
+      LIMIT 100 OFFSET $offset
     """.query[Achievement].to[List]
 
   def create(achievement: Achievement): ConnectionIO[Int] = 

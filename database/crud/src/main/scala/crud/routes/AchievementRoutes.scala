@@ -19,18 +19,18 @@ import repository.AchievementRepository
 class AchievementRoutes[F[_]: Async](achRepository: AchievementRepository, xa : Transactor[F]) extends Http4sDsl[F]:
 
   val routes: HttpRoutes[F] = HttpRoutes.of[F]:
-    //GET all achievements
-    case GET -> Root =>
+    // GET /achievements (o /achievements?offset=100)
+    case GET -> Root :? OffsetParam(offset) =>
       for
-        achievements <- achRepository.findAll.transact(xa)
+        achievements <- achRepository.findAll(offset.getOrElse(0)).transact(xa)
         resp <- Ok(achievements)
       yield resp
 
-    //GET achievements by appid
-    case GET -> Root / IntVar(id) =>
+    // GET /achievements/123 (o /achievements/123?offset=100)
+    case GET -> Root / IntVar(id) :? OffsetParam(offset) =>
       for
-        maybeAchievement <- achRepository.findById(id).transact(xa)
-        resp <- Ok(maybeAchievement)
+        achievements <- achRepository.findByAppId(id, offset.getOrElse(0)).transact(xa)
+        resp <- Ok(achievements)
       yield resp
 
     // POST create achievement

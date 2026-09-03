@@ -8,18 +8,22 @@ import java.time.LocalDate
 
 class UserAchievementRepository:
 
-  def findAllBySteamId(steamId: Long): ConnectionIO[List[UserAchievement]] =
+  def findAllBySteamId(steamId: Long, offset: Int = 0): ConnectionIO[List[UserAchievement]] =
     sql"""
       SELECT steam_id, app_id, achievement_key, unlock_time
       FROM user_achievements
       WHERE steam_id = $steamId
+      ORDER BY unlock_time DESC NULLS LAST, achievement_key ASC
+      LIMIT 100 OFFSET $offset
     """.query[UserAchievement].to[List]
 
-  def findBySteamIdAndAppId(steamId: Long, appId: Int): ConnectionIO[List[UserAchievement]] =
+  def findBySteamIdAndAppId(steamId: Long, appId: Int, offset: Int = 0): ConnectionIO[List[UserAchievement]] =
     sql"""
       SELECT steam_id, app_id, achievement_key, unlock_time
       FROM user_achievements
       WHERE steam_id = $steamId AND app_id = $appId
+      ORDER BY unlock_time DESC NULLS LAST, achievement_key ASC
+      LIMIT 100 OFFSET $offset
     """.query[UserAchievement].to[List]
 
   def create(achievement: UserAchievement): ConnectionIO[Int] =

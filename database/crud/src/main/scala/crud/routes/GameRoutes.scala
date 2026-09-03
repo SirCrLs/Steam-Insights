@@ -17,16 +17,19 @@ import org.http4s.circe.CirceEntityDecoder.*
 import models.Game
 import repository.GameRepository
 
+import org.http4s.dsl.impl.OptionalQueryParamDecoderMatcher
+object OffsetParam extends OptionalQueryParamDecoderMatcher[Int]("offset")
+
 class GameRoutes[F[_]: Async](gameRepository: GameRepository, xa : Transactor[F]) extends Http4sDsl[F]:
 
   val routes: HttpRoutes[F] = HttpRoutes.of[F]:
-
-    case GET -> Root =>
-      gameRepository.findAll.transact(xa).attempt.flatMap {
+    // GET all games with offset
+    case GET -> Root / "games" :? OffsetParam(offset) =>
+      gameRepository.findAll(offset.getOrElse(0)).transact(xa).attempt.flatMap {
         case Right(games) =>
           Ok(games)
         case Left(e) =>
-          e.printStackTrace()  // Remove IO() wrapper
+          e.printStackTrace()  
           InternalServerError(s"Error: ${e.getMessage}")
       }
 

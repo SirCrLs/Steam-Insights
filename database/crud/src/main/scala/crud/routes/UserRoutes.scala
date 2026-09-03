@@ -34,10 +34,10 @@ class UserRoutes[F[_]: Async](
   val routes: HttpRoutes[F] = HttpRoutes.of[F]:
     // ==   USERS   ==
     //GET all users
-    case GET -> Root =>
+    case GET -> Root :? OffsetParam(offset) =>
       for
-        users <- userRepository.findAll.transact(xa)
-        resp <- Ok(users)
+        users <- userRepository.findAll(offset.getOrElse(0)).transact(xa)
+        resp  <- Ok(users)
       yield resp
 
     //GET user by steamid
@@ -83,11 +83,12 @@ class UserRoutes[F[_]: Async](
 
     // ==   UserGame   ==
     // GET all games from user
-    case GET -> Root / LongVar(steamId) / GamesURL =>
+    case GET -> Root / LongVar(steamId) / GamesURL :? OffsetParam(offset) =>
       for
-        games <- userGamesRepo.findGamesBySteamId(steamId).transact(xa)
+        games <- userGamesRepo.findGamesBySteamId(steamId, offset.getOrElse(0)).transact(xa)
         resp  <- Ok(games)
       yield resp
+
     // GET one game from user
     case GET -> Root / LongVar(steamid) / GamesURL / IntVar(appid)=>
       for
@@ -121,17 +122,17 @@ class UserRoutes[F[_]: Async](
 
     // ==   UserAchievements   ==
     // GET all achievements from a user
-    case GET -> Root / LongVar(steamId) / AchievementsURL =>
+    case GET -> Root / LongVar(steamId) / AchievementsURL :? OffsetParam(offset) =>
       for
-        achievements <- userAchievementsRepo.findAllBySteamId(steamId).transact(xa)
-        resp <- Ok(achievements)
+        achievements <- userAchievementsRepo.findAllBySteamId(steamId, offset.getOrElse(0)).transact(xa)
+        resp         <- Ok(achievements)
       yield resp
 
     // GET all achievements of user for an specific game
-    case GET -> Root / LongVar(steamId) / AchievementsURL / IntVar(appid) =>
+    case GET -> Root / LongVar(steamId) / AchievementsURL / IntVar(appid) :? OffsetParam(offset) =>
       for
-        achievements <- userAchievementsRepo.findBySteamIdAndAppId(steamId, appid).transact(xa)
-        resp <- Ok(achievements)
+        achievements <- userAchievementsRepo.findBySteamIdAndAppId(steamId, appid, offset.getOrElse(0)).transact(xa)
+        resp         <- Ok(achievements)
       yield resp
 
     // PUT Upsert an achievement
