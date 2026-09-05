@@ -19,8 +19,6 @@ import repository.AchievementRepository
 class AchievementRoutes[F[_]: Async](achRepository: AchievementRepository, xa : Transactor[F]) extends Http4sDsl[F]:
 
   val routes: HttpRoutes[F] = HttpRoutes.of[F]:
-    // Routes in localhost (they might change if you host it)
-    //
 
     // GET obtain all achievements
     case GET -> Root :? LimitParam(limitOpt) +& OffsetParam(offsetOpt) =>

@@ -11,8 +11,9 @@ import org.http4s.implicits.*
 import doobie.implicits.*
 import crud.db.DatabaseConfig
 import auth.ApiKeyMiddleware
-import routes.{GameRoutes, UserRoutes, AchievementRoutes}
-import repository.{GameRepository, UserRepository, UserGameRepository, UserAchievementRepository, AchievementRepository}
+import routes.{GameRoutes, UserRoutes, AchievementRoutes, QueryRoutes}
+import repository.{GameRepository, UserRepository, UserGameRepository, 
+UserAchievementRepository, AchievementRepository, QueryRepository}
 import org.http4s.HttpApp
 
 object Main extends IOApp:
@@ -39,6 +40,7 @@ object Main extends IOApp:
       val userGameRepository = new UserGameRepository()
       val userAchievementRepository = new UserAchievementRepository()
       val achievementRepository = new AchievementRepository()
+      val queryRepository = new QueryRepository()
 
       // Routes
       val gameRoutes = new GameRoutes[IO](gameRepository, xa).routes
@@ -52,14 +54,17 @@ object Main extends IOApp:
 
       val achievementRoutes = new AchievementRoutes[IO](achievementRepository, xa).routes
 
+      val queryRoutes = new QueryRoutes[IO](queryRepository, xa).routes
+
       val apiRoutes = Router(
         "/games"        -> gameRoutes,
         "/users"        -> userRoutes,
-        "/achievements" -> achievementRoutes
+        "/achievements" -> achievementRoutes,
+        "/query"        -> queryRoutes
       )
 
       // if self hosted, base routes would be:
-      // http://localhost:4000/api/games
+      // http://localhost:4000/api/games?key=<SCALA_API_KEY>
 
       val protectedApiRoutes = ApiKeyMiddleware(apiRoutes)
 
