@@ -92,3 +92,4 @@ database/crud/project/metals.sbt
 .bloop/
 .scala-build/
 .bsp/
+cookies.txt

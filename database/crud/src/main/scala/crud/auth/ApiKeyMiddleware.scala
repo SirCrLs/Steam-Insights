@@ -1,4 +1,4 @@
-package crud.auth
+package auth
 
 import cats.data.{Kleisli, OptionT}
 import cats.effect.Async
@@ -25,6 +25,7 @@ object ApiKeyMiddleware:
         req.params.get("apiKey")
           .orElse(req.params.get("key"))
           .orElse(req.headers.get(apiKeyHeader).map(_.head.value))
+          .orElse(req.cookies.find(_.name == "session").map(_.content))
 
       providedKey match
         case Some(key) if key == expectedApiKey =>

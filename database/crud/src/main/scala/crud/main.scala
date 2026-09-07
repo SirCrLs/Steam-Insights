@@ -11,7 +11,7 @@ import org.http4s.implicits.*
 import doobie.implicits.*
 import crud.db.DatabaseConfig
 import auth.ApiKeyMiddleware
-import routes.{GameRoutes, UserRoutes, AchievementRoutes, QueryRoutes}
+import routes.{GameRoutes, UserRoutes, AchievementRoutes, QueryRoutes, LoginRoutes}
 import repository.{GameRepository, UserRepository, UserGameRepository, 
 UserAchievementRepository, AchievementRepository, QueryRepository}
 import org.http4s.HttpApp
@@ -56,22 +56,20 @@ object Main extends IOApp:
 
       val queryRoutes = new QueryRoutes[IO](queryRepository, xa).routes
 
-      val apiRoutes = Router(
-        "/games"        -> gameRoutes,
-        "/users"        -> userRoutes,
-        "/achievements" -> achievementRoutes,
-        "/query"        -> queryRoutes
-      )
+      val loginRoutes = new LoginRoutes[IO].routes
+
+      val allRoutes = Router(
+        "/"                 -> healthRoutes(xa),
+        "/login"            -> loginRoutes,
+        "/api/games"        -> ApiKeyMiddleware(gameRoutes),
+        "/api/users"        -> ApiKeyMiddleware(userRoutes),
+        "/api/achievements" -> ApiKeyMiddleware(achievementRoutes),
+        "/api/query"        -> ApiKeyMiddleware(queryRoutes)
+      ).orNotFound
 
       // if self hosted, base routes would be:
       // http://localhost:4000/api/games?key=<SCALA_API_KEY>
-
-      val protectedApiRoutes = ApiKeyMiddleware(apiRoutes)
-
-      val allRoutes: HttpApp[IO] = Router(
-        "/" -> healthRoutes(xa), // Public
-        "/api" -> protectedApiRoutes // Protected
-      ).orNotFound
+      // that from the terminal or browser, but with the crud requires login
 
       val appWithErrorLogging = ErrorHandling(allRoutes)
 
