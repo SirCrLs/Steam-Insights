@@ -65,6 +65,8 @@ services:
       - "80:80"
     depends_on:
       - crud
+    volumes:
+      - ./frontend/public:/usr/share/nginx/html
 
 volumes:
   postgres_data:
