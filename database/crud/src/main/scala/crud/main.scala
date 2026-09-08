@@ -15,8 +15,6 @@ import routes.{GameRoutes, UserRoutes, AchievementRoutes, QueryRoutes, LoginRout
 import repository.{GameRepository, UserRepository, UserGameRepository, 
 UserAchievementRepository, AchievementRepository, QueryRepository}
 import org.http4s.HttpApp
-import org.http4s.StaticFile
-import org.http4s.dsl.io.*
 import cats.syntax.semigroupk.*
 
 object Main extends IOApp:
@@ -35,16 +33,6 @@ object Main extends IOApp:
           }
     }
 
-  private def staticRoutes: HttpRoutes[IO] = HttpRoutes.of[IO] {
-    case req @ GET -> Root / "index.html" =>
-      StaticFile.fromResource("/templates/index.html", Some(req)).getOrElseF(NotFound())
-
-    case req @ GET -> Root / "login.html" =>
-      StaticFile.fromResource("/templates/login.html", Some(req)).getOrElseF(NotFound())
-
-    case req @ GET -> "static" /: path =>
-      StaticFile.fromResource(s"/static/$path", Some(req)).getOrElseF(NotFound())
-  }
   def run(args: List[String]): IO[ExitCode] =
     DatabaseConfig.transactor[IO].use { xa =>
       // Repos
@@ -72,7 +60,7 @@ object Main extends IOApp:
       val loginRoutes = new LoginRoutes[IO].routes
 
       val allRoutes = Router(
-        "/"                 -> (healthRoutes(xa) <+> staticRoutes),
+        "/"                 -> healthRoutes(xa),
         "/login"            -> loginRoutes,
         "/api/games"        -> ApiKeyMiddleware(gameRoutes),
         "/api/users"        -> ApiKeyMiddleware(userRoutes),
@@ -80,17 +68,13 @@ object Main extends IOApp:
         "/api/query"        -> ApiKeyMiddleware(queryRoutes)
       ).orNotFound
 
-      // if self hosted, base routes would be:
-      // http://localhost:4000/api/games?key=<SCALA_API_KEY>
-      // that from the terminal or browser, but with the crud requires login
-
       val appWithErrorLogging = ErrorHandling(allRoutes)
 
       EmberServerBuilder
         .default[IO]
         .withHost(host"0.0.0.0")
         .withPort(port"4000")
-        .withHttpApp(allRoutes)
+        .withHttpApp(appWithErrorLogging)
         .build
         .useForever
     }.as(ExitCode.Success)

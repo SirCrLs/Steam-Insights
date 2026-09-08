@@ -10,18 +10,20 @@ document.getElementById("login-form").addEventListener("submit", async (event) =
     const response = await fetch("/login", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
+      credentials: "include", 
       body: JSON.stringify({ username, key })
     });
 
     if (response.ok) {
+      localStorage.setItem("is_authenticated", "true");
       window.location.href = "/index.html";
     } else {
       const data = await response.json().catch(() => ({}));
-      errorEl.textContent = data.error || "Invalid data";
+      errorEl.textContent = data.error || "Invalid credentials";
       errorEl.classList.remove("hidden");
     }
   } catch (err) {
-    errorEl.textContent = "Error with the conection to the server";
+    errorEl.textContent = "Error with the connection to the server";
     errorEl.classList.remove("hidden");
   }
 });

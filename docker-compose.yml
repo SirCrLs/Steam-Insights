@@ -45,6 +45,7 @@ services:
       - .env
     ports:
       - "3838:3838"
+
   crud:
     build: ./database/crud
     container_name: steam-crud
@@ -55,5 +56,15 @@ services:
       - .env
     ports:
       - "4000:4000"
+
+  frontend:
+    build: ./frontend
+    container_name: steam-frontend
+    restart: always
+    ports:
+      - "80:80"
+    depends_on:
+      - crud
+
 volumes:
   postgres_data:
