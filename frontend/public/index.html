@@ -23,8 +23,8 @@
 
     <div class="grid-services">
 
-      <a href="/crud/index.html" class="card active">
-        <div class="badge status-online">Available</div>
+      <a href="/crud/index.html" id="card-crud" class="card active">
+        <div id="badge-crud" class="badge status-checking" data-endpoint="/health">Checking...</div>
         <div class="card-icon">
             <i data-lucide="database"></i>
         </div>
@@ -33,8 +33,8 @@
         <span class="tech-tag scala">Scala / http4s</span>
       </a>
 
-      <a href="/dashboard/index.html" class="card active">
-        <div class="badge status-online">Available</div>
+      <a href="/dashboard/index.html" id="card-dashboard" class="card active">
+        <div id="badge-dashboard" class="badge status-checking" data-endpoint="/dashboard/health">Checking...</div>
         <div class="card-icon">
           <i data-lucide="layout-dashboard"></i>
         </div>
@@ -43,8 +43,8 @@
         <span class="tech-tag r">R / Shiny</span>
       </a>
 
-      <a href="/ml/index.html" class="card active">
-        <div class="badge status-online">Available</div>
+      <a href="/ml/index.html" id="card-ml" class="card active">
+        <div id="badge-ml" class="badge status-checking" data-endpoint="/ml/health">Checking...</div>
         <div class="card-icon">
           <i data-lucide="brain"></i>
         </div>
@@ -56,6 +56,7 @@
     </div>
   </main>
 
+  <script src="/js/health-check.js"></script>
   <script src="/js/logout.js"></script>
   <script>lucide.createIcons();</script>
 </body>
