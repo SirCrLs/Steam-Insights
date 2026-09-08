@@ -2,13 +2,61 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Steam Insights</title>
   <script src="/js/auth-guard.js"></script>
-  <link rel="stylesheet" href="/static/css/style.css">
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <link rel="stylesheet" href="/css/styles.css">
 </head>
 <body>
-  <div class="login-container">
-    <h1>Steam Insights</h1>
-  </div>
+
+  <header class="navbar">
+    <div class="logo">Steam Insights</div>
+    <button id="logout-btn" class="btn-logout">Log Out</button>
+  </header>
+
+  <main class="container">
+    <section class="welcome-section">
+      <h1>Control Panel</h1>
+      <p>Select the module you want to access:</p>
+    </section>
+
+    <div class="grid-services">
+
+      <a href="/crud/index.html" class="card active">
+        <div class="badge status-online">Available</div>
+        <div class="card-icon">
+            <i data-lucide="database"></i>
+        </div>
+        <h2>Database CRUD</h2>
+        <p>Lorem ipsum yada yada</p>
+        <span class="tech-tag scala">Scala / http4s</span>
+      </a>
+
+      <a href="/dashboard/index.html" class="card active">
+        <div class="badge status-online">Available</div>
+        <div class="card-icon">
+          <i data-lucide="layout-dashboard"></i>
+        </div>
+        <h2>Dashboard</h2>
+        <p>Ipsum lorde bla bla and that</p>
+        <span class="tech-tag r">R / Shiny</span>
+      </a>
+
+      <a href="/ml/index.html" class="card active">
+        <div class="badge status-online">Available</div>
+        <div class="card-icon">
+          <i data-lucide="brain"></i>
+        </div>
+        <h2>Machine Learning</h2>
+        <p>machine learning models and stuff</p>
+        <span class="tech-tag python">Python / Scikit-Learn</span>
+      </a>
+
+    </div>
+  </main>
+
+  <script src="/js/logout.js"></script>
+  <script>lucide.createIcons();</script>
 </body>
 </html>

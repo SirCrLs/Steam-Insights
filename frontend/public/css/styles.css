@@ -6,11 +6,16 @@
 body {
   background-color: #0e0e12;
   color: #e4e4e7;
+  min-height: 100vh;
+  margin: 0;
   display: flex;
+  flex-direction: column;
+}
+
+/* Login */
+body:has(.login-container) {
   justify-content: center;
   align-items: center;
-  height: 100vh;
-  margin: 0;
 }
 
 .login-container {
@@ -53,14 +58,15 @@ button {
   padding: 0.7rem;
   border: none;
   border-radius: 4px;
-  background-color: #7c3aed;
+  background-color: #2563eb;
   color: white;
   font-weight: 600;
   cursor: pointer;
+  transition: background-color 0.2s ease;
 }
 
 button:hover {
-  background-color: #6d28d9;
+  background-color: #1d4ed8;
 }
 
 .error {
@@ -73,3 +79,146 @@ button:hover {
 .hidden {
   display: none;
 }
+
+/* Index*/
+.navbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 2rem;
+  background-color: #1a1a20;
+  border-bottom: 1px solid #2e2e35;
+}
+
+.logo {
+  font-weight: 700;
+  font-size: 1.2rem;
+  color: #f4f4f5;
+}
+
+.btn-logout {
+  margin-top: 0;
+  background-color: transparent;
+  border: 1px solid #2e2e35;
+  color: #a1a1aa;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-logout:hover {
+  background-color: #dc2626;
+  color: white;
+  border-color: #dc2626;
+}
+
+.container {
+  max-width: 1100px;
+  margin: 2.5rem auto;
+  padding: 0 1.5rem;
+  width: 100%;
+}
+
+.welcome-section {
+  text-align: center;
+  margin-bottom: 3rem;
+}
+
+.welcome-section h1 {
+  font-size: 2.2rem;
+  margin-bottom: 0.5rem;
+  color: #f4f4f5;
+}
+
+.welcome-section p {
+  color: #a1a1aa;
+  font-size: 1rem;
+}
+
+/* Grilla de Tarjetas */
+.grid-services {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1.5rem;
+}
+
+.card {
+  background-color: #1a1a20;
+  border: 1px solid #2e2e35;
+  border-radius: 8px;
+  padding: 1.8rem;
+  position: relative;
+  text-decoration: none;
+  color: inherit;
+  transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+  display: flex;
+  flex-direction: column;
+}
+
+.card.active:hover {
+  transform: translateY(-4px);
+  border-color: #2563eb;
+  box-shadow: 0 10px 20px -5px rgba(37, 99, 235, 0.25);
+}
+
+/* Estilo para los Íconos Monocromáticos */
+.card-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 8px;
+  background-color: #24242c;
+  color: #a1a1aa; /* Color monocromático inicial */
+  margin-bottom: 1.2rem;
+  transition: color 0.2s ease, background-color 0.2s ease;
+}
+
+/* Al pasar el mouse por la tarjeta, el ícono se destaca en azul */
+.card.active:hover .card-icon {
+  color: #2563eb;
+  background-color: rgba(37, 99, 235, 0.1);
+}
+
+.card h2 {
+  font-size: 1.3rem;
+  margin: 0 0 0.5rem 0;
+  color: #f4f4f5;
+}
+
+.card p {
+  color: #a1a1aa;
+  font-size: 0.95rem;
+  line-height: 1.5;
+  flex-grow: 1;
+  margin-bottom: 1.5rem;
+}
+
+.badge {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.25rem 0.6rem;
+  border-radius: 20px;
+}
+
+.status-online {
+  background-color: rgba(34, 197, 94, 0.15);
+  color: #4ade80;
+}
+
+.tech-tag {
+  align-self: flex-start;
+  font-size: 0.8rem;
+  font-weight: 600;
+  padding: 0.3rem 0.6rem;
+  border-radius: 4px;
+}
+
+.tech-tag.scala { background-color: rgba(220, 38, 38, 0.2); color: #f87171; }
+.tech-tag.r { background-color: rgba(37, 99, 235, 0.2); color: #60a5fa; }
+.tech-tag.python { background-color: rgba(234, 179, 8, 0.2); color: #facc15; }
