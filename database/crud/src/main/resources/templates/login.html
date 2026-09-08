@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Steam Insights - Login</title>
+  <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+  <div class="login-container">
+    <h1>Steam Insights</h1>
+    <form id="login-form">
+      <label for="username">User</label>
+      <input type="text" id="username" name="username" required autocomplete="username">
+
+      <label for="key">API Key</label>
+      <input type="password" id="key" name="key" required autocomplete="current-password">
+
+      <button type="submit">Enter</button>
+      <p id="error-message" class="error hidden"></p>
+    </form>
+  </div>
+
+  <script src="/static/js/login.js"></script>
+</body>
+</html>
