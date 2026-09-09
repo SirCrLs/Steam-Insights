@@ -91,9 +91,11 @@ button:hover {
 }
 
 .logo {
-  font-weight: 700;
-  font-size: 1.2rem;
+  font-size: 1.5rem; 
+  font-weight: 800;  
   color: #f4f4f5;
+  letter-spacing: -0.02em; 
+  transition: opacity 0.2s ease;
 }
 
 .btn-logout {
@@ -245,4 +247,15 @@ button:hover {
   border-color: #2e2e35 !important;
   box-shadow: none !important;
   transform: none !important;
+}
+.logo-link {
+  text-decoration: none;
+  color: inherit;
+  display: inline-block;
+}
+.logo-link:hover .logo {
+  opacity: 0.9;
+}
+.logo-accent {
+  color: #2563eb;
 }
