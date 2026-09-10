@@ -1,0 +1,226 @@
+.crud-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.crud-header h1 {
+  font-size: 1.8rem;
+  color: #f4f4f5;
+  margin: 0;
+}
+
+.btn-primary {
+  background-color: #2563eb;
+  color: #ffffff;
+  border: none;
+  padding: 0.55rem 1.2rem;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  transition: background-color 0.2s ease;
+  white-space: nowrap !important;
+  margin: 0 !important;
+}
+
+.btn-primary:hover {
+  background-color: #1d4ed8;
+}
+
+.controls-row {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+	align-items: flex-end !important; 
+  gap: 1.5rem;
+  margin-bottom: 1.5rem;
+  width: 100%;
+}
+
+.crud-tabs {
+  display: flex;
+  gap: 0.5rem;
+  margin: 0;
+}
+
+.tab-btn {
+  background-color: #1a1a20;
+  border: 1px solid #2e2e35;
+  color: #a1a1aa;
+  padding: 0.55rem 1.2rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 500;
+  font-size: 0.875rem;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.tab-btn.active, .tab-btn:hover {
+  background-color: #2563eb;
+  color: #ffffff;
+  border-color: #2563eb;
+}
+
+.query-bar {
+  display: flex !important;
+  flex-direction: row !important; 
+  align-items: center !important;
+  gap: 0.75rem !important;
+  margin: 0 !important;
+  flex: 1;
+}
+
+.input-wrapper {
+  display: flex;
+  flex: 1;
+  background-color: #1a1a20;
+  border: 1px solid #2e2e35;
+  border-radius: 6px;
+  padding: 0 0.8rem; 
+  height: 38px;   
+  box-sizing: border-box;
+}
+
+.query-icon {
+  color: #a1a1aa;
+  display: flex;
+  align-items: center;
+  margin-right: 0.5rem;
+}
+
+#query-input {
+  width: 100%;
+  height: 100%;   
+  background: transparent;
+  border: none;
+  outline: none;
+  color: #f4f4f5;
+  font-family: 'Consolas', 'Monaco', monospace;
+  font-size: 0.875rem;
+}
+
+.table-card {
+  background-color: #1a1a20;
+  border: 1px solid #2e2e35;
+  border-radius: 8px;
+  overflow: hidden;
+  min-height: 250px; 
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.table-responsive {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.crud-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: 0.9rem;
+}
+
+.crud-table th {
+  background-color: #24242c;
+  color: #f4f4f5;
+  padding: 0.85rem 1rem;
+  font-weight: 600;
+  border-bottom: 1px solid #2e2e35;
+}
+
+.crud-table td {
+  padding: 0.85rem 1rem;
+  border-bottom: 1px solid #2e2e35;
+  color: #a1a1aa;
+}
+
+.empty-row td {
+  text-align: center;
+  padding: 3rem 1rem;
+  color: #6b7280;
+  font-style: italic;
+}
+
+/* Contenedor del desplegable alineado exactamente como un botón */
+.dropdown-details {
+  position: relative;
+  display: inline-flex !important;
+  align-items: flex-end !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+/* Quitar la flecha gris nativa del elemento summary */
+.dropdown-details summary {
+  list-style: none !important;
+  user-select: none;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 0 0.75rem !important; /* Ancho ajustado y compacto */
+  height: 38px !important;       /* Misma altura exacta que el resto de pestañas */
+  box-sizing: border-box !important;
+}
+
+.dropdown-details summary::-webkit-details-marker {
+  display: none !important;
+}
+
+/* Redimensionar el icono para que no expanda el botón */
+.dropdown-details summary i,
+.dropdown-details summary svg {
+  width: 18px !important;
+  height: 18px !important;
+  pointer-events: none;
+}
+
+/* Posición del menú desplegable emergente */
+.dropdown-details[open] .dropdown-menu {
+  display: flex;
+  flex-direction: column;
+}
+
+.dropdown-menu {
+  display: none;
+  position: absolute;
+  top: calc(100% + 0.4rem);
+  left: 0;
+  background-color: #1a1a20;
+  border: 1px solid #2e2e35;
+  border-radius: 6px;
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.4);
+  z-index: 100;
+  min-width: 180px;
+  overflow: hidden;
+}
+
+.dropdown-item {
+  background: transparent;
+  border: none;
+  color: #a1a1aa;
+  padding: 0.65rem 1rem;
+  text-align: left;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  width: 100%;
+}
+
+.dropdown-item:hover {
+  background-color: #24242c;
+  color: #f4f4f5;
+}
+
+.dropdown-item.active {
+  background-color: #2563eb;
+  color: #ffffff;
+}

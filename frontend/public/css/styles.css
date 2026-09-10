@@ -85,17 +85,33 @@ button:hover {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 1rem 2rem;
+  padding: 0.45rem 1.5rem;
   background-color: #1a1a20;
   border-bottom: 1px solid #2e2e35;
+  min-height: 48px; 
+}
+
+.logo-link {
+  text-decoration: none;
+  color: inherit;
+  display: inline-flex;
+  align-items: center;
+}
+
+.logo-link:hover .logo {
+  opacity: 0.9;
 }
 
 .logo {
-  font-size: 1.5rem; 
-  font-weight: 800;  
+  font-size: 1.1rem;
+  font-weight: 800;
   color: #f4f4f5;
-  letter-spacing: -0.02em; 
+  letter-spacing: -0.02em;
   transition: opacity 0.2s ease;
+}
+
+.logo-accent {
+  color: #2563eb;
 }
 
 .btn-logout {
@@ -103,7 +119,8 @@ button:hover {
   background-color: transparent;
   border: 1px solid #2e2e35;
   color: #a1a1aa;
-  padding: 0.5rem 1rem;
+  padding: 0.3rem 0.75rem; 
+  font-size: 0.8rem; 
   border-radius: 4px;
   cursor: pointer;
   transition: all 0.2s ease;
@@ -138,7 +155,6 @@ button:hover {
   font-size: 1rem;
 }
 
-/* Grilla de Tarjetas */
 .grid-services {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
@@ -164,7 +180,6 @@ button:hover {
   box-shadow: 0 10px 20px -5px rgba(37, 99, 235, 0.25);
 }
 
-/* Estilo para los Íconos Monocromáticos */
 .card-icon {
   display: flex;
   align-items: center;
@@ -173,12 +188,11 @@ button:hover {
   height: 48px;
   border-radius: 8px;
   background-color: #24242c;
-  color: #a1a1aa; /* Color monocromático inicial */
+  color: #a1a1aa; 
   margin-bottom: 1.2rem;
   transition: color 0.2s ease, background-color 0.2s ease;
 }
 
-/* Al pasar el mouse por la tarjeta, el ícono se destaca en azul */
 .card.active:hover .card-icon {
   color: #2563eb;
   background-color: rgba(37, 99, 235, 0.1);
@@ -208,23 +222,6 @@ button:hover {
   border-radius: 20px;
 }
 
-.status-online {
-  background-color: rgba(34, 197, 94, 0.15);
-  color: #4ade80;
-}
-
-.tech-tag {
-  align-self: flex-start;
-  font-size: 0.8rem;
-  font-weight: 600;
-  padding: 0.3rem 0.6rem;
-  border-radius: 4px;
-}
-
-.tech-tag.scala { background-color: rgba(220, 38, 38, 0.2); color: #f87171; }
-.tech-tag.r { background-color: rgba(37, 99, 235, 0.2); color: #60a5fa; }
-.tech-tag.python { background-color: rgba(234, 179, 8, 0.2); color: #facc15; }
-
 .badge.status-checking {
   background-color: rgba(234, 179, 8, 0.15);
   color: #facc15;
@@ -240,6 +237,18 @@ button:hover {
   color: #94a3b8;
 }
 
+.tech-tag {
+  align-self: flex-start;
+  font-size: 0.8rem;
+  font-weight: 600;
+  padding: 0.3rem 0.6rem;
+  border-radius: 4px;
+}
+
+.tech-tag.scala { background-color: rgba(220, 38, 38, 0.2); color: #f87171; }
+.tech-tag.r { background-color: rgba(37, 99, 235, 0.2); color: #60a5fa; }
+.tech-tag.python { background-color: rgba(234, 179, 8, 0.2); color: #facc15; }
+
 .card.disabled {
   opacity: 0.5;
   cursor: not-allowed;
@@ -247,15 +256,4 @@ button:hover {
   border-color: #2e2e35 !important;
   box-shadow: none !important;
   transform: none !important;
-}
-.logo-link {
-  text-decoration: none;
-  color: inherit;
-  display: inline-block;
-}
-.logo-link:hover .logo {
-  opacity: 0.9;
-}
-.logo-accent {
-  color: #2563eb;
 }
