@@ -72,7 +72,7 @@ object Main extends IOApp:
 
       // CORS
       val corsApp = CORS.policy
-        .withAllowOriginAll
+        .withAllowCredentials(true) 
         .withAllowMethodsAll
         .withAllowHeadersAll
         .apply(appWithErrorLogging)

@@ -47,10 +47,10 @@ class UserRoutes[F[_]: Async](
     case GET -> Root / LongVar(steamid) =>
       userRepository.findById(steamid).transact(xa).attempt.flatMap {
         case Right(Some(user)) => Ok(user)
-        case Right(None)       => NotFound(s"User not found: steamID = $steamid")
+        case Right(None)       => NotFound(Map("error" -> s"User not found: steamID = $steamid"))
         case Left(error)       => 
           error.printStackTrace()
-          InternalServerError(s"Database mapping error: ${error.getMessage}")
+          InternalServerError(Map("error" -> s"Database mapping error: ${error.getMessage}"))
       }
 
     //POST create user
