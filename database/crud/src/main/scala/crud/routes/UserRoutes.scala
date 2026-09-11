@@ -77,13 +77,16 @@ class UserRoutes[F[_]: Async](
 
     // DELETE user by id
     case DELETE -> Root / LongVar(steamid) =>
-      for
-        rowsDeleted <- userRepository.delete(steamid).transact(xa)
-        resp <- if rowsDeleted > 0 then
-          NoContent()
-        else
+      userRepository.delete(steamid).transact(xa).attempt.flatMap {
+        case Right(rowsDeleted) if rowsDeleted > 0 =>
+          Ok(Map("message" -> s"User $steamid deleted successfully"))
+          
+        case Right(_) =>
           NotFound(Map("error" -> s"Delete failed: user $steamid does not exist"))
-      yield resp
+          
+        case Left(error) =>
+          InternalServerError(Map("error" -> s"Error deleting user: ${error.getMessage}"))
+      }
 
     // ==   UserGame   ==
     // GET all games from user
@@ -118,13 +121,16 @@ class UserRoutes[F[_]: Async](
 
     // DELETE a game from user library
     case DELETE -> Root / LongVar(steamId) / GamesURL / IntVar(appid) =>
-      for
-        rowsDeleted <- userGamesRepo.delete(steamId, appid).transact(xa)
-        resp <- if rowsDeleted > 0 then
-          NoContent()
-        else
+      userGamesRepo.delete(steamId, appid).transact(xa).attempt.flatMap {
+        case Right(rowsDeleted) if rowsDeleted > 0 =>
+          Ok(Map("message" -> s"Game $appid removed from library of user $steamId"))
+
+        case Right(_) =>
           NotFound(Map("error" -> s"Game $appid not found on library of user $steamId"))
-      yield resp
+
+        case Left(error) =>
+          InternalServerError(Map("error" -> s"Error removing game from library: ${error.getMessage}"))
+      }
 
 
     // ==   UserAchievements   ==
@@ -161,20 +167,26 @@ class UserRoutes[F[_]: Async](
   
     // DELETE all achievements from a game
     case DELETE -> Root / LongVar(steamId) / AchievementsURL / IntVar(appId) =>
-      for
-        rowsDeleted <- userAchievementsRepo.deleteBySteamIdAndAppId(steamId, appId).transact(xa)
-        resp <- if rowsDeleted > 0 then
-          NoContent()
-        else
-          NotFound(Map("error" -> s"Achievements not found for $appId"))
-      yield resp
+      userAchievementsRepo.deleteBySteamIdAndAppId(steamId, appId).transact(xa).attempt.flatMap {
+        case Right(rowsDeleted) if rowsDeleted > 0 =>
+          Ok(Map("message" -> s"All achievements for game $appId removed for user $steamId ($rowsDeleted deleted)"))
+
+        case Right(_) =>
+          NotFound(Map("error" -> s"Achievements not found for game $appId and user $steamId"))
+
+        case Left(error) =>
+          InternalServerError(Map("error" -> s"Error deleting achievements: ${error.getMessage}"))
+      }
 
     // DELETE one specific achievement
     case DELETE -> Root / LongVar(steamId) / AchievementsURL / IntVar(appId) / achievementKey =>
-      for
-        rowsDeleted <- userAchievementsRepo.deleteByKey(steamId, appId, achievementKey).transact(xa)
-        resp <- if rowsDeleted > 0 then
-          NoContent()
-        else
-          NotFound(Map("error" -> s"ahcievement = $achievementKey not found for game $appId and user $steamId"))
-      yield resp
+      userAchievementsRepo.deleteByKey(steamId, appId, achievementKey).transact(xa).attempt.flatMap {
+        case Right(rowsDeleted) if rowsDeleted > 0 =>
+          Ok(Map("message" -> s"Achievement $achievementKey removed for game $appId and user $steamId"))
+
+        case Right(_) =>
+          NotFound(Map("error" -> s"Achievement $achievementKey not found for game $appId and user $steamId"))
+
+        case Left(error) =>
+          InternalServerError(Map("error" -> s"Error deleting achievement $achievementKey: ${error.getMessage}"))
+      }

@@ -64,10 +64,13 @@ class AchievementRoutes[F[_]: Async](achRepository: AchievementRepository, xa : 
 
     // DELETE ach by id
     case DELETE -> Root / key / IntVar(appid) =>
-      for
-        rowsDeleted <- achRepository.delete(appid,key).transact(xa)
-        resp <- if rowsDeleted > 0 then
-          NoContent()
-        else
-          NotFound(Map("error" -> s"Delete failed: achievement $key does not exist"))
-      yield resp
+      achRepository.delete(appid, key).transact(xa).attempt.flatMap {
+        case Right(rowsDeleted) if rowsDeleted > 0 =>
+          Ok(Map("message" -> s"Achievement $key for app $appid deleted successfully"))
+          
+        case Right(_) =>
+          NotFound(Map("error" -> s"Delete failed: achievement $key for app $appid does not exist"))
+          
+        case Left(error) =>
+          InternalServerError(Map("error" -> s"Error deleting achievement: ${error.getMessage}"))
+      }

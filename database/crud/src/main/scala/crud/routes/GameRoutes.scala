@@ -70,10 +70,12 @@ class GameRoutes[F[_]: Async](gameRepository: GameRepository, xa : Transactor[F]
     case DELETE -> Root / IntVar(id) =>
       gameRepository.delete(id).transact(xa).attempt.flatMap {
         case Right(rowsAffected) if rowsAffected > 0 => 
-          Ok(s"Game $id deleted successfully")
+          Ok(Map("message" -> s"Game $id deleted successfully"))
+
         case Right(_) => 
-          NotFound(s"Game $id not found")
+          NotFound(Map("error" -> s"Game $id not found"))
+          
         case Left(error) =>
           error.printStackTrace()
-          InternalServerError(s"Error deleting game: ${error.getMessage}")
+          InternalServerError(Map("error" -> s"Error deleting game: ${error.getMessage}"))
       }
