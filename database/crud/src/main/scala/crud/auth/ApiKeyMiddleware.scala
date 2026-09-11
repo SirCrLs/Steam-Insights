@@ -21,20 +21,21 @@ object ApiKeyMiddleware:
     import dsl.*
 
     Kleisli { (req: Request[F]) =>
-      val providedKey: Option[String] = 
-        req.params.get("apiKey")
-          .orElse(req.params.get("key"))
-          .orElse(req.headers.get(apiKeyHeader).map(_.head.value))
-          .orElse(req.cookies.find(_.name == "session").map(_.content))
+      if req.method == Method.OPTIONS then
+        routes(req)
+      else
+        val providedKey: Option[String] = 
+          req.headers.get(apiKeyHeader).map(_.head.value)
+            .orElse(req.cookies.find(_.name == "session").map(_.content))
 
-      providedKey match
-        case Some(key) if key == expectedApiKey =>
-          routes(req)
-        case _ =>
-          OptionT.liftF(
-            Unauthorized(
-              `WWW-Authenticate`(Challenge("ApiKey", "Steam-Insights-API")),
-              "Access Denied: API Key invalid or missing"
+        providedKey match
+          case Some(key) if key == expectedApiKey =>
+            routes(req)
+          case _ =>
+            OptionT.liftF(
+              Unauthorized(
+                `WWW-Authenticate`(Challenge("ApiKey", "Steam-Insights-API")),
+                "Access Denied: API Key invalid or missing"
+              )
             )
-          )
     }

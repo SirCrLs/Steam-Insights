@@ -15,7 +15,7 @@ class UserRepository:
         is_public, has_public_games, has_public_achievements, games_fetched, fetched_at
       FROM users
       ORDER BY steam_id
-      LIMIT 100 OFFSET $offset
+      LIMIT $limit OFFSET $offset
     """.query[User].to[List]
 
   def count: ConnectionIO[Long] =

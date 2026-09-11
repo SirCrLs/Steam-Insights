@@ -5,7 +5,7 @@ import com.comcast.ip4s.*
 import org.http4s.ember.server.EmberServerBuilder
 import org.http4s.server.Router
 import org.http4s.HttpRoutes
-import org.http4s.server.middleware.ErrorHandling
+import org.http4s.server.middleware.{ErrorHandling, CORS}
 import org.http4s.dsl.io.*
 import org.http4s.implicits.*
 import doobie.implicits.*
@@ -70,11 +70,18 @@ object Main extends IOApp:
 
       val appWithErrorLogging = ErrorHandling(allRoutes)
 
+      // CORS
+      val corsApp = CORS.policy
+        .withAllowOriginAll
+        .withAllowMethodsAll
+        .withAllowHeadersAll
+        .apply(appWithErrorLogging)
+
       EmberServerBuilder
         .default[IO]
         .withHost(host"0.0.0.0")
         .withPort(port"4000")
-        .withHttpApp(appWithErrorLogging)
+        .withHttpApp(corsApp)
         .build
         .useForever
     }.as(ExitCode.Success)
