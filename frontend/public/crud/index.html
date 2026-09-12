@@ -58,15 +58,13 @@
         <table class="crud-table">
           <thead>
             <tr id="table-headers">
-              <th>ID</th>
-              <th>Name</th>
-              <th>Details</th>
-              <th>Actions</th>
+              <th>Info</th>
+              <th style="width: 80px; text-align: center;">Actions</th>
             </tr>
           </thead>
           <tbody id="table-body">
             <tr class="empty-row">
-              <td colspan="4">Data havent been loaded. Make a query or select a table.</td>
+              <td colspan="2">Data havent been loaded.</td>
             </tr>
           </tbody>
         </table>
@@ -92,8 +90,7 @@
   </div>
 
   <script src="/js/logout.js"></script>
-  <script src="/crud/js/api.js"></script>
-  <script src="/crud/js/crud-main.js"></script>
+  <script type="module" src="/crud/js/main.js"></script>
   <script>lucide.createIcons();</script>
 </body>
 </html>
