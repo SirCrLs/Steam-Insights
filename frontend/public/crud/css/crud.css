@@ -224,3 +224,92 @@
   background-color: #2563eb;
   color: #ffffff;
 }
+
+.table-card {
+  background-color: #1a1a20;
+  border: 1px solid #2e2e35;
+  border-radius: 8px;
+  overflow: hidden;
+  max-height: 520px; 
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.table-responsive {
+  width: 100%;
+  overflow: auto; 
+  max-height: 520px;
+  position: relative;
+}
+
+.crud-table th {
+  background-color: #24242c;
+  color: #f4f4f5;
+  padding: 0.6rem 0.85rem;
+  font-weight: 600;
+  border-bottom: 1px solid #2e2e35;
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  white-space: nowrap;
+}
+
+.crud-table td {
+  padding: 0rem 0.85rem; 
+  border-bottom: 1px solid #2e2e35;
+  color: #a1a1aa;
+  max-width: 280px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis; 
+}
+
+.crud-table th:last-child,
+.crud-table td:last-child {
+  position: sticky;
+  right: 0;
+  background-color: #1a1a20; 
+  z-index: 10;
+  box-shadow: -1px 0 0px rgba(0, 0, 0, 0.1); 
+  text-align: center;
+  width: 70px;
+  min-width: 70px;
+}
+
+.crud-table th:last-child {
+  background-color: #24242c;
+  z-index: 30; 
+}
+
+.crud-table tbody tr {
+  position: relative;
+  z-index: 1;
+}
+
+.crud-table tbody tr:has(details[open]) {
+  z-index: 50;
+}
+
+.crud-table td:last-child .dropdown-menu {
+  z-index: 100 !important;
+}
+.crud-table td:last-child {
+  overflow: visible !important;
+}
+
+.crud-table tbody tr:has(details[open]) {
+  z-index: 999 !important;
+  position: relative;
+}
+
+.dropdown-menu-left {
+  left: auto !important;
+  right: 0 !important;
+}
+
+.crud-table .dropdown-details[open] .dropdown-menu {
+  display: flex;
+  flex-direction: column;
+  z-index: 1000 !important;
+}
