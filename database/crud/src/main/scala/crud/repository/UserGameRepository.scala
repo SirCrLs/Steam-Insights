@@ -7,14 +7,23 @@ import doobie.postgres.implicits.*
 
 class UserGameRepository:
   
-  def findGamesBySteamId(steamId: Long, limit: Int = 100, offset: Int = 0): ConnectionIO[List[UserGame]] =
+  def findGamesBySteamId(steamId: Long, limit: Int = 100, offset: Int = 0): ConnectionIO[List[UserGame]] = 
     sql"""
       SELECT 
-        steam_id, app_id, playtime_forever, playtime_2weeks, achievements_status
-      FROM user_games
-      WHERE steam_id = $steamId
-      ORDER BY playtime_forever DESC
-      LIMIT $limit OFFSET $offset
+        ug.steam_id, 
+        ug.app_id, 
+        ug.playtime_forever, 
+        ug.playtime_2weeks, 
+        ug.achievements_status
+      FROM user_games ug
+      JOIN (
+        SELECT app_id 
+        FROM user_games 
+        WHERE steam_id = $steamId
+        ORDER BY playtime_forever DESC, app_id ASC
+        LIMIT $limit OFFSET $offset
+      ) AS t ON ug.steam_id = $steamId AND ug.app_id = t.app_id
+      ORDER BY ug.playtime_forever DESC, ug.app_id ASC
     """.query[UserGame].to[List]
 
   def countBySteamId(steamId: Long): ConnectionIO[Int] =

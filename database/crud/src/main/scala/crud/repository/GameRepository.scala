@@ -11,17 +11,22 @@ class GameRepository:
   def findAll(limit: Int, offset: Int): ConnectionIO[List[Game]] =
     sql"""
       SELECT 
-        app_id, name, short_description, genres, categories, supported_languages, 
-        header_image, pc_requirements_minimum, pc_requirements_recommended, 
-        processor_minimum, processor_recommended, graphics_minimum, graphics_recommended,
-        ram_minimum_gb, ram_recommended_gb, storage_minimum_gb, storage_recommended_gb,
-        developers, is_on_windows, is_on_mac, is_on_linux, metacritic_score, release_date, 
-        price_usd, is_free, rating, total_achievements, recommendations, 
-        owners_min, owners_max, positive_reviews, negative_reviews, total_reviews, 
-        approval_rate, fetched_at
-      FROM games
-      ORDER BY app_id
-      LIMIT $limit OFFSET $offset
+        g.app_id, g.name, g.short_description, g.genres, g.categories, g.supported_languages, 
+        g.header_image, g.pc_requirements_minimum, g.pc_requirements_recommended, 
+        g.processor_minimum, g.processor_recommended, g.graphics_minimum, g.graphics_recommended,
+        g.ram_minimum_gb, g.ram_recommended_gb, g.storage_minimum_gb, g.storage_recommended_gb,
+        g.developers, g.is_on_windows, g.is_on_mac, g.is_on_linux, g.metacritic_score, g.release_date, 
+        g.price_usd, g.is_free, g.rating, g.total_achievements, g.recommendations, 
+        g.owners_min, g.owners_max, g.positive_reviews, g.negative_reviews, g.total_reviews, 
+        g.approval_rate, g.fetched_at
+      FROM games g
+      JOIN (
+        SELECT app_id 
+        FROM games 
+        ORDER BY app_id 
+        LIMIT $limit OFFSET $offset
+      ) AS t ON g.app_id = t.app_id
+      ORDER BY g.app_id
     """.query[Game].to[List]
 
   def count: ConnectionIO[Long] =

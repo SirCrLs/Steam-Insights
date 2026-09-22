@@ -11,11 +11,16 @@ class UserRepository:
   def findAll(limit: Int, offset: Int): ConnectionIO[List[User]] =
     sql"""
       SELECT 
-        steam_id, persona_name, profile_url, avatar_url, country_code, account_created,
-        is_public, has_public_games, has_public_achievements, games_fetched, fetched_at
-      FROM users
-      ORDER BY steam_id
-      LIMIT $limit OFFSET $offset
+        u.steam_id, u.persona_name, u.profile_url, u.avatar_url, u.country_code, u.account_created,
+        u.is_public, u.has_public_games, u.has_public_achievements, u.games_fetched, u.fetched_at
+      FROM users u
+      JOIN (
+        SELECT steam_id 
+        FROM users 
+        ORDER BY steam_id 
+        LIMIT $limit OFFSET $offset
+      ) AS t ON u.steam_id = t.steam_id
+      ORDER BY u.steam_id
     """.query[User].to[List]
 
   def count: ConnectionIO[Long] =

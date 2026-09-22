@@ -9,10 +9,16 @@ class AchievementRepository:
   
   def findAll(limit: Int = 100, offset: Int = 0): ConnectionIO[List[Achievement]] =
     sql"""
-      SELECT app_id, achievement_key, display_name, achievement_desc, global_unlock_pct
-      FROM achievements
-      ORDER BY app_id ASC, achievement_key ASC
-      LIMIT $limit OFFSET $offset
+      SELECT 
+        a.app_id, a.achievement_key, a.display_name, a.achievement_desc, a.global_unlock_pct
+      FROM achievements a
+      JOIN (
+        SELECT app_id, achievement_key 
+        FROM achievements 
+        ORDER BY app_id ASC, achievement_key ASC 
+        LIMIT $limit OFFSET $offset
+      ) AS t ON a.app_id = t.app_id AND a.achievement_key = t.achievement_key
+      ORDER BY a.app_id ASC, a.achievement_key ASC
     """.query[Achievement].to[List]
 
   def count: ConnectionIO[Int] =
@@ -24,15 +30,20 @@ class AchievementRepository:
   def findByAppId(appId: Int, limit: Int = 100, offset: Int = 0): ConnectionIO[List[Achievement]] = 
     sql"""
       SELECT 
-        app_id, 
-        achievement_key, 
-        display_name, 
-        achievement_desc, 
-        global_unlock_pct
-      FROM achievements
-      WHERE app_id = $appId
-      ORDER BY achievement_key ASC
-      LIMIT $limit OFFSET $offset
+        a.app_id, 
+        a.achievement_key, 
+        a.display_name, 
+        a.achievement_desc, 
+        a.global_unlock_pct
+      FROM achievements a
+      JOIN (
+        SELECT app_id, achievement_key 
+        FROM achievements 
+        WHERE app_id = $appId
+        ORDER BY achievement_key ASC
+        LIMIT $limit OFFSET $offset
+      ) AS t ON a.app_id = t.app_id AND a.achievement_key = t.achievement_key
+      ORDER BY a.achievement_key ASC
     """.query[Achievement].to[List]
 
   def countByAppId(appId: Int): ConnectionIO[Int] =

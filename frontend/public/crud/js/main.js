@@ -1,4 +1,4 @@
-import { GamesAPI } from '/crud/js/services/api.js';
+import { GamesAPI, UsersAPI, AchievementsAPI } from '/crud/js/services/api.js';
 import { renderDynamicTable } from '/crud/js/services/table-render.js';
 import { renderPagination } from '/crud/js/services/page-render.js'; 
 
@@ -6,15 +6,32 @@ const ITEMS_PER_PAGE = 100;
 let currentPage = 1;
 let currentEntity = 'games';
 
+const API_MAP = {
+  games: GamesAPI,
+  users: UsersAPI,
+  achievements: AchievementsAPI
+};
+
+async function loadData(offset) {
+  const api = API_MAP[currentEntity];
+  
+  if (!api) {
+    throw new Error(`Entity not found: ${currentEntity}`);
+  }
+
+  return await api.getAll(ITEMS_PER_PAGE, offset);
+}
+
 async function loadPage(page) {
   currentPage = page;
-  
   const offset = (currentPage - 1) * ITEMS_PER_PAGE;
 
   try {
-    const res = await GamesAPI.getAll(ITEMS_PER_PAGE, offset);
+    const res = await loadData(offset);
+    const items = res.games || res.users || res.achievements || [];
     
-    renderDynamicTable(res.games);
+    renderDynamicTable(items);
+    
     renderPagination(currentPage, res.total, ITEMS_PER_PAGE, (newPage) => {
       loadPage(newPage);
     });
