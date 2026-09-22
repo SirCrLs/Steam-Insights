@@ -149,7 +149,6 @@
   font-style: italic;
 }
 
-/* Contenedor del desplegable alineado exactamente como un botón */
 .dropdown-details {
   position: relative;
   display: inline-flex !important;
@@ -158,15 +157,14 @@
   padding: 0 !important;
 }
 
-/* Quitar la flecha gris nativa del elemento summary */
 .dropdown-details summary {
   list-style: none !important;
   user-select: none;
   display: inline-flex !important;
   align-items: center !important;
   justify-content: center !important;
-  padding: 0 0.75rem !important; /* Ancho ajustado y compacto */
-  height: 38px !important;       /* Misma altura exacta que el resto de pestañas */
+  padding: 0 0.75rem !important;
+  height: 38px !important; 
   box-sizing: border-box !important;
 }
 
@@ -174,7 +172,6 @@
   display: none !important;
 }
 
-/* Redimensionar el icono para que no expanda el botón */
 .dropdown-details summary i,
 .dropdown-details summary svg {
   width: 18px !important;
@@ -182,7 +179,6 @@
   pointer-events: none;
 }
 
-/* Posición del menú desplegable emergente */
 .dropdown-details[open] .dropdown-menu {
   display: flex;
   flex-direction: column;
@@ -355,4 +351,50 @@
 .pagination-ellipsis {
   color: #64748b;
   padding: 0 4px;
+}
+.pagination-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  flex-wrap: wrap;
+  gap: 15px;
+}
+
+.pagination-wrapper::before {
+  content: "";
+  flex: 0 0 110px; 
+}
+
+.pagination-nav {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  gap: 4px;
+}
+
+.pagination-search {
+  display: flex;
+  align-items: center;
+  flex: 0 0 auto;
+}
+
+.pagination-search-input {
+  width: 110px;
+  padding: 6px 8px;
+  border: 1px solid #cccccc36;
+  border-radius: 4px;
+  font-size: 14px;
+  text-align: center;
+}
+
+.pagination-search-input::-webkit-outer-spin-button,
+.pagination-search-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.pagination-search-input[type=number] {
+  appearance: textfield;
 }
