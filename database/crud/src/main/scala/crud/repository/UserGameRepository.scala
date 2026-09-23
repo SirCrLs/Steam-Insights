@@ -19,10 +19,10 @@ class UserGameRepository:
       JOIN (
         SELECT steam_id, app_id 
         FROM user_games 
-        ORDER BY playtime_forever DESC, app_id ASC
+        ORDER BY steam_id ASC, app_id ASC
         LIMIT $limit OFFSET $offset
       ) AS t ON ug.steam_id = t.steam_id AND ug.app_id = t.app_id
-      ORDER BY ug.playtime_forever DESC, ug.app_id ASC
+      ORDER BY ug.steam_id ASC, ug.app_id ASC
     """.query[UserGame].to[List]
 
   def count: ConnectionIO[Int] =

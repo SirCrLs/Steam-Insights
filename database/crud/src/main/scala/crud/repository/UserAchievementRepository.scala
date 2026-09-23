@@ -19,10 +19,10 @@ class UserAchievementRepository:
       JOIN (
         SELECT steam_id, app_id, achievement_key 
         FROM user_achievements 
-        ORDER BY unlock_time DESC NULLS LAST, achievement_key ASC
+        ORDER BY steam_id ASC, app_id ASC, achievement_key ASC
         LIMIT $limit OFFSET $offset
       ) AS t ON ua.steam_id = t.steam_id AND ua.app_id = t.app_id AND ua.achievement_key = t.achievement_key
-      ORDER BY ua.unlock_time DESC NULLS LAST, ua.achievement_key ASC
+      ORDER BY ua.steam_id ASC, ua.app_id ASC, ua.achievement_key ASC
     """.query[UserAchievement].to[List]
 
   def count: ConnectionIO[Int] =

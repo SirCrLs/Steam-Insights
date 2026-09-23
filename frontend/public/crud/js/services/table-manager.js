@@ -10,8 +10,8 @@ const API_MAP = {
   games: GamesAPI,
   users: UsersAPI,
   achievements: AchievementsAPI,
-  userGames: UserGamesAPI,
-  userAchievements: UserAchievementsAPI 
+  user_games: UserGamesAPI,
+  user_achievements: UserAchievementsAPI 
 };
 
 async function loadData(offset) {
@@ -30,7 +30,7 @@ export async function loadPage(page = 1) {
 
   try {
     const res = await loadData(offset);
-    const items = res.games || res.users || res.achievements || res.userGames || res.userAchievements || [];
+    const items = res.games || res.users || res.achievements || res.user_games || res.user_achievements || [];
     
     renderDynamicTable(items);
     renderPagination(currentPage, res.total, ITEMS_PER_PAGE, (newPage) => {
