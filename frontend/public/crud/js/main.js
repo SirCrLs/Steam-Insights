@@ -1,4 +1,4 @@
-import { loadPage, changeEntity } from '/crud/js/services/table-manager.js';
+import { loadPage, changeEntity, initQueryForm } from '/crud/js/services/table-manager.js';
 
 document.querySelectorAll('[data-entity]').forEach(element => {
   element.addEventListener('click', (e) => {
@@ -19,5 +19,7 @@ document.querySelectorAll('[data-entity]').forEach(element => {
     changeEntity(entity);
   });
 });
+
+initQueryForm();
 
 loadPage(1);

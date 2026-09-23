@@ -1,4 +1,4 @@
-import { GamesAPI, UsersAPI, AchievementsAPI, UserGamesAPI, UserAchievementsAPI } from './api.js';
+import { GamesAPI, UsersAPI, AchievementsAPI, UserGamesAPI, UserAchievementsAPI, QueryAPI } from './api.js';
 import { renderDynamicTable } from './table-render.js';
 import { renderPagination } from './page-render.js'; 
 
@@ -46,5 +46,27 @@ export function changeEntity(newEntity) {
   if (API_MAP[newEntity]) {
     currentEntity = newEntity;
     loadPage(1); 
+  }
+}
+
+// Free query on Terminal
+export function initQueryForm() {
+  const queryForm = document.getElementById('query-form');
+  const queryInput = document.getElementById('query-input');
+
+  if (queryForm) {
+    queryForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const sqlQuery = queryInput.value.trim();
+      if (!sqlQuery) return;
+
+      try {
+        const result = await QueryAPI.execute(sqlQuery);
+        renderDynamicTable(result);
+      } catch (error) {
+        console.error("Error on execute of SQL:", error);
+        alert("Error: " + (error.message || "Verify is a valid SELECT"));
+      }
+    });
   }
 }

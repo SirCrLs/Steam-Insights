@@ -155,3 +155,15 @@ export const UserAchievementsAPI = {
       method: 'DELETE'
     })
 };
+
+// 6. CUSTOM QUERY API
+export const QueryAPI = {
+  execute: (sqlQuery) => 
+    request('/query', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ sql: sqlQuery })
+    })
+};
