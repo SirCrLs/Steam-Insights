@@ -103,8 +103,8 @@ export const AchievementsAPI = {
   })
 };
 
-// 4. USERS_GAMES
-export const UsersGamesAPI = {
+// 4. USER_GAMES
+export const UserGamesAPI = {
 
   getUserGames: (steamId, limit = 100, offset = 0) => 
     request(`/users/${steamId}/games${buildPaginationQuery(limit, offset)}`),
@@ -124,8 +124,8 @@ export const UsersGamesAPI = {
   })
 };
 
-// 5. USERS_ACHIEVEMENTS
-export const UsersAchievementsAPI = {
+// 5. USER_ACHIEVEMENTS
+export const UserAchievementsAPI = {
   getUserAchievements: (steamId, limit = 100, offset = 0) => 
     request(`/users/${steamId}/achievements${buildPaginationQuery(limit, offset)}`),
 

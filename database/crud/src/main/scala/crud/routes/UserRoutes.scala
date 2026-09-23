@@ -89,6 +89,16 @@ class UserRoutes[F[_]: Async](
       }
 
     // ==   UserGame   ==
+    // GET all user games
+    case GET -> Root / "user-games" :? LimitParam(limitOpt) +& OffsetParam(offsetOpt) =>
+      val limit = limitOpt.getOrElse(100)
+      val offset = offsetOpt.getOrElse(0)
+      for
+        games <- userGamesRepo.findAll(limit, offset).transact(xa)
+        total <- userGamesRepo.count.transact(xa)
+        resp  <- Ok(Map("total" -> total.asJson, "user_games" -> games.asJson))
+      yield resp
+
     // GET all games from user
     case GET -> Root / LongVar(steamId) / GamesURL :? LimitParam(limitOpt) +& OffsetParam(offsetOpt) =>
       val limit = limitOpt.getOrElse(100)
@@ -134,6 +144,16 @@ class UserRoutes[F[_]: Async](
 
 
     // ==   UserAchievements   ==
+    // GET all user achievements
+    case GET -> Root / "user-achievements" :? LimitParam(limitOpt) +& OffsetParam(offsetOpt) =>
+      val limit = limitOpt.getOrElse(100)
+      val offset = offsetOpt.getOrElse(0)
+      for
+        achievements <- userAchievementsRepo.findAll(limit, offset).transact(xa)
+        total <- userAchievementsRepo.count.transact(xa)
+        resp  <- Ok(Map("total" -> total.asJson, "user_achievements" -> achievements.asJson))
+      yield resp
+      
     // GET all achievements from a user
     case GET -> Root / LongVar(steamId) / AchievementsURL :? LimitParam(limitOpt) +& OffsetParam(offsetOpt) =>
       val limit = limitOpt.getOrElse(100)
