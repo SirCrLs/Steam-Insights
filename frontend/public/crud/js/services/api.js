@@ -24,7 +24,7 @@ async function request(endpoint, options = {}) {
 
     return data;
   } catch (error) {
-    console.error(`Error en petición a ${endpoint}:`, error);
+    console.error(`Error on petition ${endpoint}:`, error);
     throw error;
   }
 }

@@ -5,6 +5,7 @@ import { renderPagination } from './page-render.js';
 const ITEMS_PER_PAGE = 100;
 let currentPage = 1;
 let currentEntity = 'games';
+let currentTableData = [];
 
 const API_MAP = {
   games: GamesAPI,
@@ -31,6 +32,8 @@ export async function loadPage(page = 1) {
   try {
     const res = await loadData(offset);
     const items = res.games || res.users || res.achievements || res.user_games || res.user_achievements || [];
+
+    currentTableData = items;
     
     renderDynamicTable(items);
     renderPagination(currentPage, res.total, ITEMS_PER_PAGE, (newPage) => {
@@ -69,4 +72,49 @@ export function initQueryForm() {
       }
     });
   }
+}
+
+export function initTableActions() {
+  const tableContainer = document.querySelector('#table-container') || document.body;
+
+  tableContainer.addEventListener('click', async (e) => {
+    const deleteBtn = e.target.closest('.btn-delete');
+    if (!deleteBtn) return;
+
+    const index = parseInt(deleteBtn.getAttribute('data-index'), 10);
+    const rowData = currentTableData[index];
+
+    if (!rowData) return;
+
+    const confirmed = window.confirm("Sure you want to delete it?");
+    if (!confirmed) return;
+
+    try {
+      switch (currentEntity) {
+        case 'games':
+          await GamesAPI.delete(rowData.appId);
+          break;
+        case 'users':
+          await UsersAPI.delete(rowData.steamId);
+          break;
+        case 'achievements':
+          await AchievementsAPI.delete(rowData.achievementKey,rowData.appId);
+          break;
+        case 'user_games':
+          await UserGamesAPI.removeGameFromUser(rowData.steamId, rowData.appId);
+          break;
+        case 'user_achievements':
+          await UserAchievementsAPI.removeSpecificAchievement(rowData.steamId, rowData.appId, rowData.achievementKey);
+          break;
+        default:
+          throw new Error("Entity not supported for delete");
+      }
+
+      loadPage(currentPage);
+      
+    } catch (error) {
+      console.error("Error on delete", error);
+      alert("Data couldnt be deleted: " + (error.message || "Unknown Error"));
+    }
+  });
 }

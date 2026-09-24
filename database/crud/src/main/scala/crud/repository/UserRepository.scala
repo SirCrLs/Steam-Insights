@@ -1,5 +1,6 @@
 package repository
 
+import models.SteamId
 import models.User
 import doobie.*
 import doobie.implicits.*
@@ -26,13 +27,13 @@ class UserRepository:
   def count: ConnectionIO[Long] =
     sql"SELECT COUNT(*) FROM users".query[Long].unique
 
-  def findById(steamId: Long): ConnectionIO[Option[User]] = 
+  def findById(steamId: SteamId): ConnectionIO[Option[User]] = 
     sql"""
       SELECT
         steam_id, persona_name, profile_url, avatar_url, country_code, account_created,
         is_public,has_public_games, has_public_achievements, games_fetched, fetched_at
       FROM users
-      WHERE steam_id = $steamId
+      WHERE steam_id = ${steamId.value}
     """.query[User].option
   
   def create(user : User): ConnectionIO[Int] =
@@ -41,13 +42,13 @@ class UserRepository:
         steam_id, persona_name, profile_url, avatar_url, country_code, account_created,
         is_public, has_public_games, has_public_achievements, games_fetched,  fetched_at
       ) VALUES (
-        ${user.steamId}, ${user.personaName}, ${user.profileUrl}, ${user.avatarUrl},
+        ${user.steamId.value}, ${user.personaName}, ${user.profileUrl}, ${user.avatarUrl},
         ${user.countryCode}, ${user.accountCreated}, ${user.isPublic}, ${user.fetchedAt},
         ${user.hasPublicGames}, ${user.hasPublicAchievements}, ${user.gamesFetched}
       )
     """.update.run
 
-  def update(steamId : Long, user : User): ConnectionIO[Int] =
+  def update(steamId : SteamId, user : User): ConnectionIO[Int] =
     sql"""
       UPDATE users SET
         persona_name = ${user.personaName}, 
@@ -60,11 +61,11 @@ class UserRepository:
         has_public_achievements = ${user.hasPublicAchievements}, 
         games_fetched = ${user.gamesFetched},
         fetched_at = ${user.fetchedAt}, 
-      WHERE steam_id = $steamId
+      WHERE steam_id = ${steamId.value}
     """.update.run
 
-  def delete(steamId: Long):ConnectionIO[Int] =
+  def delete(steamId: SteamId):ConnectionIO[Int] =
     sql"""
-      DELETE FROM users WHERE steam_id = $steamId
+      DELETE FROM users WHERE steam_id = ${steamId.value}
     """.update.run
     

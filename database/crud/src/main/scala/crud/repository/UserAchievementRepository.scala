@@ -1,6 +1,7 @@
 package repository
 
 import models.UserAchievement
+import models.SteamId
 import doobie.*
 import doobie.implicits.*
 import doobie.postgres.implicits.*
@@ -31,7 +32,7 @@ class UserAchievementRepository:
       FROM user_achievements
     """.query[Int].unique
 
-  def findAllBySteamId(steamId: Long, limit: Int = 100, offset: Int = 0): ConnectionIO[List[UserAchievement]] =
+  def findAllBySteamId(steamId: SteamId, limit: Int = 100, offset: Int = 0): ConnectionIO[List[UserAchievement]] =
     sql"""
       SELECT 
         ua.steam_id, 
@@ -42,21 +43,21 @@ class UserAchievementRepository:
       JOIN (
         SELECT app_id, achievement_key 
         FROM user_achievements 
-        WHERE steam_id = $steamId
+        WHERE steam_id = ${steamId.value}
         ORDER BY unlock_time DESC NULLS LAST, achievement_key ASC
         LIMIT $limit OFFSET $offset
-      ) AS t ON ua.steam_id = $steamId AND ua.app_id = t.app_id AND ua.achievement_key = t.achievement_key
+      ) AS t ON ua.steam_id = ${steamId.value} AND ua.app_id = t.app_id AND ua.achievement_key = t.achievement_key
       ORDER BY ua.unlock_time DESC NULLS LAST, ua.achievement_key ASC
     """.query[UserAchievement].to[List]
 
-  def countBySteamId(steamId: Long): ConnectionIO[Int] =
+  def countBySteamId(steamId: SteamId): ConnectionIO[Int] =
     sql"""
       SELECT COUNT(*) 
       FROM user_achievements 
-      WHERE steam_id = $steamId
+      WHERE steam_id = ${steamId.value}
     """.query[Int].unique
 
-  def findBySteamIdAndAppId(steamId: Long, appId: Int, limit: Int = 100, offset: Int = 0): ConnectionIO[List[UserAchievement]] =
+  def findBySteamIdAndAppId(steamId: SteamId, appId: Int, limit: Int = 100, offset: Int = 0): ConnectionIO[List[UserAchievement]] =
     sql"""
       SELECT 
         ua.steam_id, 
@@ -67,18 +68,18 @@ class UserAchievementRepository:
       JOIN (
         SELECT achievement_key 
         FROM user_achievements 
-        WHERE steam_id = $steamId AND app_id = $appId
+        WHERE steam_id = ${steamId.value} AND app_id = $appId
         ORDER BY unlock_time DESC NULLS LAST, achievement_key ASC
         LIMIT $limit OFFSET $offset
-      ) AS t ON ua.steam_id = $steamId AND ua.app_id = $appId AND ua.achievement_key = t.achievement_key
+      ) AS t ON ua.steam_id = ${steamId.value} AND ua.app_id = $appId AND ua.achievement_key = t.achievement_key
       ORDER BY ua.unlock_time DESC NULLS LAST, ua.achievement_key ASC
     """.query[UserAchievement].to[List]
 
-  def countBySteamIdAndAppId(steamId: Long, appId: Int): ConnectionIO[Int] =
+  def countBySteamIdAndAppId(steamId: SteamId, appId: Int): ConnectionIO[Int] =
     sql"""
       SELECT COUNT(*) 
       FROM user_achievements 
-      WHERE steam_id = $steamId AND app_id = $appId
+      WHERE steam_id = ${steamId.value} AND app_id = $appId
     """.query[Int].unique
 
   def create(achievement: UserAchievement): ConnectionIO[Int] =
@@ -86,27 +87,19 @@ class UserAchievementRepository:
       INSERT INTO user_achievements (
         steam_id, app_id, achievement_key, unlock_time
       ) VALUES (
-        ${achievement.steamId},
+        ${achievement.steamId.value},
         ${achievement.appId},
         ${achievement.achievementKey},
         ${achievement.unlocktime}
       )
     """.update.run
 
-  def createMany(achievements: List[UserAchievement]): ConnectionIO[Int] =
-    val sql = """
-      INSERT INTO user_achievements (
-        steam_id, app_id, achievement_key, unlock_time
-      ) VALUES (?, ?, ?, ?)
-    """
-    Update[UserAchievement](sql).updateMany(achievements)
-
   def upsert(achievement: UserAchievement): ConnectionIO[Int] =
     sql"""
       INSERT INTO user_achievements (
         steam_id, app_id, achievement_key, unlock_time
       ) VALUES (
-        ${achievement.steamId},
+        ${achievement.steamId.value},
         ${achievement.appId},
         ${achievement.achievementKey},
         ${achievement.unlocktime}
@@ -115,16 +108,16 @@ class UserAchievementRepository:
       DO UPDATE SET unlocktime = EXCLUDED.unlock_time
     """.update.run
 
-  def deleteBySteamIdAndAppId(steamId: Long, appId: Int): ConnectionIO[Int] =
+  def deleteBySteamIdAndAppId(steamId: SteamId, appId: Int): ConnectionIO[Int] =
     sql"""
       DELETE FROM user_achievements
-      WHERE steam_id = $steamId AND app_id = $appId
+      WHERE steam_id = ${steamId.value} AND app_id = $appId
     """.update.run
   
-  def deleteByKey(steamId: Long, appId: Int, achievementKey: String): ConnectionIO[Int] =
+  def deleteByKey(steamId: SteamId, appId: Int, achievementKey: String): ConnectionIO[Int] =
     sql"""
       DELETE FROM user_achievements
-      WHERE steam_id = $steamId 
+      WHERE steam_id = ${steamId.value} 
         AND app_id = $appId 
         AND achievement_key = $achievementKey
     """.update.run
