@@ -1,11 +1,12 @@
 import { GamesAPI, UsersAPI, AchievementsAPI, UserGamesAPI, UserAchievementsAPI, QueryAPI } from './api.js';
 import { renderDynamicTable } from './table-render.js';
 import { renderPagination } from './page-render.js'; 
+import { handleViewAction, handleEditAction, handleDeleteAction } from './actions-manager.js';
 
 const ITEMS_PER_PAGE = 100;
-let currentPage = 1;
-let currentEntity = 'games';
-let currentTableData = [];
+export let currentPage = 1;
+export let currentEntity = 'games';
+export let currentTableData = [];
 
 const API_MAP = {
   games: GamesAPI,
@@ -78,43 +79,22 @@ export function initTableActions() {
   const tableContainer = document.querySelector('#table-container') || document.body;
 
   tableContainer.addEventListener('click', async (e) => {
+    const viewBtn = e.target.closest('.btn-view');
+    if (viewBtn) {
+      await handleViewAction(viewBtn);
+      return;
+    }
+
+    const editBtn = e.target.closest('.btn-edit');
+    if (editBtn) {
+      handleEditAction(editBtn);
+      return;
+    }
+
     const deleteBtn = e.target.closest('.btn-delete');
-    if (!deleteBtn) return;
-
-    const index = parseInt(deleteBtn.getAttribute('data-index'), 10);
-    const rowData = currentTableData[index];
-
-    if (!rowData) return;
-
-    const confirmed = window.confirm("Sure you want to delete it?");
-    if (!confirmed) return;
-
-    try {
-      switch (currentEntity) {
-        case 'games':
-          await GamesAPI.delete(rowData.appId);
-          break;
-        case 'users':
-          await UsersAPI.delete(rowData.steamId);
-          break;
-        case 'achievements':
-          await AchievementsAPI.delete(rowData.achievementKey,rowData.appId);
-          break;
-        case 'user_games':
-          await UserGamesAPI.removeGameFromUser(rowData.steamId, rowData.appId);
-          break;
-        case 'user_achievements':
-          await UserAchievementsAPI.removeSpecificAchievement(rowData.steamId, rowData.appId, rowData.achievementKey);
-          break;
-        default:
-          throw new Error("Entity not supported for delete");
-      }
-
-      loadPage(currentPage);
-      
-    } catch (error) {
-      console.error("Error on delete", error);
-      alert("Data couldnt be deleted: " + (error.message || "Unknown Error"));
+    if (deleteBtn) {
+      await handleDeleteAction(deleteBtn);
+      return;
     }
   });
 }
