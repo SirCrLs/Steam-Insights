@@ -82,6 +82,19 @@ class UserAchievementRepository:
       WHERE steam_id = ${steamId.value} AND app_id = $appId
     """.query[Int].unique
 
+  def findOne(steamId: SteamId, appId: Int, achievementKey : String): ConnectionIO[Option[UserAchievement]] =
+    sql"""
+      SELECT 
+        steam_id, 
+        app_id, 
+        achievement_key, 
+        unlock_time
+      FROM user_achievements
+      WHERE steam_id = ${steamId.value}
+        AND app_id = $appId
+        AND achievement_key = $achievementKey
+    """.query[UserAchievement].option
+
   def create(achievement: UserAchievement): ConnectionIO[Int] =
     sql"""
       INSERT INTO user_achievements (

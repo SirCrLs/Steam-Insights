@@ -184,6 +184,16 @@ class UserRoutes[F[_]: Async](
         resp <- Ok(Map("total" -> total.asJson, "achievements" -> achievements.asJson))
       yield resp
 
+    // GET a specific user achievement for a game
+    case GET -> Root / LongVar(rawSteamid) / AchievementsURL / IntVar(appid) / achievementKey =>
+      val steamId: SteamId = SteamId(rawSteamid)
+      for
+        achievementOpt <- userAchievementsRepo.findOne(steamId, appid, achievementKey).transact(xa)
+        resp <- achievementOpt match
+          case Some(achievement) => Ok(achievement.asJson)
+          case None              => NotFound()
+      yield resp
+
     // PUT Upsert an achievement
     case req @ PUT -> Root / LongVar(rawSteamid) / AchievementsURL =>
       val steamid: SteamId = SteamId(rawSteamid)

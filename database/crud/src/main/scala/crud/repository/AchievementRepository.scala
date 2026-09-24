@@ -4,6 +4,7 @@ import models.Achievement
 import doobie.*
 import doobie.implicits.*
 import doobie.postgres.implicits.*
+import cats.instances.string
 
 class AchievementRepository:
   
@@ -45,6 +46,18 @@ class AchievementRepository:
       ) AS t ON a.app_id = t.app_id AND a.achievement_key = t.achievement_key
       ORDER BY a.achievement_key ASC
     """.query[Achievement].to[List]
+    
+  def findOne(appId: Int, achievementKey: String): ConnectionIO[Option[Achievement]] = 
+    sql"""
+      SELECT 
+        app_id, 
+        achievement_key, 
+        display_name, 
+        achievement_desc, 
+        global_unlock_pct
+      FROM achievements 
+      WHERE app_id = $appId AND achievement_key = $achievementKey
+    """.query[Achievement].option
 
   def countByAppId(appId: Int): ConnectionIO[Int] =
     sql"""

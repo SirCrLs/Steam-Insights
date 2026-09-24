@@ -30,14 +30,13 @@ class AchievementRoutes[F[_]: Async](achRepository: AchievementRepository, xa : 
         resp  <- Ok(Map("total" -> total.asJson, "achievements" -> achievements.asJson))
       yield resp
 
-    // GET obtain all achievements from a game
-    case GET -> Root / IntVar(id) :? LimitParam(limitOpt) +& OffsetParam(offsetOpt) =>
-      val limit = limitOpt.getOrElse(100)
-      val offset = offsetOpt.getOrElse(0)
+    // GET obtain a single achievement by game id and achievement key
+    case GET -> Root / IntVar(appId) / achievementKey =>
       for
-        achievements <- achRepository.findByAppId(id, limit, offset).transact(xa)
-        total <- achRepository.countByAppId(id).transact(xa)
-        resp <- Ok(Map("total" -> total.asJson, "achievements" -> achievements.asJson))
+        achievementOpt <- achRepository.findOne(appId, achievementKey).transact(xa)
+        resp <- achievementOpt match
+          case Some(achievement) => Ok(achievement.asJson)
+          case None              => NotFound()
       yield resp
 
     // POST create achievement

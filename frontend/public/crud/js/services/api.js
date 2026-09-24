@@ -88,6 +88,9 @@ export const AchievementsAPI = {
   getByGameId: (appId, limit = 100, offset = 0) => 
     request(`/achievements/${appId}${buildPaginationQuery(limit, offset)}`),
 
+  getOne: (appId, achievementKey) => 
+    request(`/achievements/${appId}/${achievementKey}`),
+
   create: (achievementData) => request('/achievements', {
     method: 'POST',
     body: JSON.stringify(achievementData)
@@ -136,6 +139,9 @@ export const UserAchievementsAPI = {
 
   getUserAchievementsByGame: (steamId, appId, limit = 100, offset = 0) => 
     request(`/users/${steamId}/achievements/${appId}${buildPaginationQuery(limit, offset)}`),
+
+  getOne: (steamId, appId, achievementKey) => 
+    request(`/users/${steamId}/achievements/${appId}/${achievementKey}`),
 
   upsertUserAchievement: (steamId, achievementPayload) => request(`/users/${steamId}/achievements`, {
     method: 'PUT',
