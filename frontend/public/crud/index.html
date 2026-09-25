@@ -72,6 +72,27 @@
       
     </section>
 
+    <!-- View -->
+    <dialog id="view-modal" class="modal">
+      <div class="modal-content">
+        <h3>Details</h3>
+        <div id="view-modal-body"></div>
+        <button type="button" onclick="document.getElementById('view-modal').close()">Exit</button>
+      </div>
+    </dialog>
+
+    <!-- Edit -->
+    <dialog id="edit-modal" class="modal">
+      <div class="modal-content">
+        <h3>Edit</h3>
+        <form id="edit-form">
+          <div id="edit-form-body"></div>
+          <button type="submit">Save Changes</button>
+          <button type="button" onclick="document.getElementById('edit-modal').close()">Cancel</button>
+        </form>
+      </div>
+    </dialog>
+
   </main>
 
   <script src="/js/logout.js"></script>

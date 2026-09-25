@@ -398,3 +398,80 @@
 .pagination-search-input[type=number] {
   appearance: textfield;
 }
+
+dialog.modal {
+  background-color: #1e1e2f;
+  color: #f1f1f1; 
+  border: 1px solid #33334d;
+  border-radius: 12px;
+  padding: 24px;
+  width: 100%;
+  max-width: 600px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+}
+
+dialog.modal::backdrop {
+  background-color: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(4px); 
+}
+
+dialog.modal h3 {
+  margin-top: 0;
+  color: #ffffff;
+  border-bottom: 1px solid #33334d;
+  padding-bottom: 10px;
+}
+
+#view-modal-body ul li {
+  border-bottom: 1px solid #2a2a3d !important; 
+}
+
+#view-modal-body strong {
+  color: #a2a2ff !important; 
+}
+
+#view-modal-body span {
+  color: #d1d1d1 !important;
+}
+
+dialog.modal input[type="text"],
+dialog.modal input[type="number"],
+dialog.modal select,
+dialog.modal textarea {
+  background-color: #2a2a3d;
+  border: 1px solid #44445c;
+  color: #ffffff;
+  border-radius: 6px;
+  padding: 8px;
+  width: 100%;
+}
+
+dialog.modal input:read-only {
+  background-color: #181824; 
+  color: #888899;
+}
+
+dialog.modal button {
+  background-color: #4f46e5;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: bold;
+  margin-right: 8px;
+  margin-top: 15px;
+  transition: background-color 0.2s;
+}
+
+dialog.modal button:hover {
+  background-color: #4338ca;
+}
+
+dialog.modal button[type="button"] {
+  background-color: #374151;
+}
+
+dialog.modal button[type="button"]:hover {
+  background-color: #4b5563;
+}
