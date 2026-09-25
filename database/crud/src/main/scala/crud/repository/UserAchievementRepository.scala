@@ -118,7 +118,7 @@ class UserAchievementRepository:
         ${achievement.unlocktime}
       )
       ON CONFLICT (steam_id, app_id, achievement_key) 
-      DO UPDATE SET unlocktime = EXCLUDED.unlock_time
+      DO UPDATE SET unlock_time = EXCLUDED.unlock_time
     """.update.run
 
   def deleteBySteamIdAndAppId(steamId: SteamId, appId: Int): ConnectionIO[Int] =

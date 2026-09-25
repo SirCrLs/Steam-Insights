@@ -74,7 +74,7 @@ class UserGameRepository:
         ${userGame.steamId.value}, ${userGame.appId}, ${userGame.playtimeForever}, 
         ${userGame.playtime2weeks}, ${userGame.achievementsStatus}
       )
-      ON CONFLICT (steam_id, game_id) DO UPDATE SET
+      ON CONFLICT (steam_id, app_id) DO UPDATE SET
         playtime_forever = EXCLUDED.playtime_forever,
         playtime_2weeks = EXCLUDED.playtime_2weeks,
         achievements_status = EXCLUDED.achievements_status

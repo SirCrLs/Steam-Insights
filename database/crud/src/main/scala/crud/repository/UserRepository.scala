@@ -60,7 +60,7 @@ class UserRepository:
         has_public_games = ${user.hasPublicGames}, 
         has_public_achievements = ${user.hasPublicAchievements}, 
         games_fetched = ${user.gamesFetched},
-        fetched_at = ${user.fetchedAt}, 
+        fetched_at = ${user.fetchedAt}
       WHERE steam_id = ${steamId.value}
     """.update.run
 
