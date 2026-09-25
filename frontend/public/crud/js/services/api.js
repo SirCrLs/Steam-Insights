@@ -16,10 +16,18 @@ async function request(endpoint, options = {}) {
 
     if (response.status === 204) return null;
 
-    const data = await response.json();
+    const text = await response.text();
+    
+    let data;
+    try {
+      data = text ? JSON.parse(text) : null;
+    } catch (e) {
+
+      throw new Error(`Server failed. (Status ${response.status}).`);
+    }
 
     if (!response.ok) {
-      throw new Error(data.error || data.message || `Error ${response.status}`);
+      throw new Error(data?.error || data?.message || `Error ${response.status}`);
     }
 
     return data;
