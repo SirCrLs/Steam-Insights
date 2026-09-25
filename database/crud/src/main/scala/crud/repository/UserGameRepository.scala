@@ -63,7 +63,7 @@ class UserGameRepository:
       SELECT 
         steam_id, app_id, playtime_forever, playtime_2weeks, achievements_status
       FROM user_games
-      WHERE steam_id = ${steamId.value} AND game_id = $appId
+      WHERE steam_id = ${steamId.value} AND app_id = $appId
     """.query[UserGame].option
   
   def upsert(userGame: UserGame): ConnectionIO[Int] =
