@@ -1,6 +1,6 @@
 FROM rocker/shiny:latest
 
-RUN R -e "install.packages(c('shiny','ggplot2','plotly','DBI','RPostgres'))"
+RUN R -e "install.packages(c('shiny','ggplot2','plotly','DBI','RPostgres','pool'))"
 
 COPY . /srv/shiny-server/
 
