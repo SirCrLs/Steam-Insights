@@ -2,6 +2,12 @@
 .git
 .gitignore
 .gitattributes
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
 
 venv/
 .venv/
@@ -19,15 +25,9 @@ target/
 .metals/
 project/project/
 project/target/
+metals.sbt
 *.class
 *.jar
-
-.idea/
-.vscode/
-*.swp
-*.swo
-.DS_Store
-Thumbs.db
 
 .env
 *.pem
@@ -35,15 +35,11 @@ Thumbs.db
 *.id_rsa
 config/secrets.*
 secrets/
-
 *.log
-docs/
 
-.bloop/
-.metals/
-.vscode/
-metals.sbt
-.git/
+data/
+*.csv
+*.json
+*.parquet
+docs/
 *.md
-database/crud/project/metals.sbt
-.bloop/
