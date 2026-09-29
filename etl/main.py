@@ -6,7 +6,10 @@ import os
 """ VARIABLES """
 
 MAX_PAGE = 10  # SteamSpy: each page is 1000 games
-MAX_USERS = 1000
+MAX_USERS = 1000 # With games AND achievements
+
+FETCH_USER_ACHIEVEMENTS = False # user achievements are expensive to fetch
+
 # amount of games/users is goint to load at once on the DB
 GAMES_BATCH_SIZE = 100
 USERS_BATCH_SIZE = 50
@@ -21,7 +24,7 @@ def main():
         sync_games(conn, api_key, MAX_PAGE, GAMES_BATCH_SIZE)
 
         logger.info(f"=== 2. Syncing users ===")
-        sync_users(conn, api_key, MAX_USERS, USERS_BATCH_SIZE)
+        sync_users(conn, api_key, MAX_USERS, USERS_BATCH_SIZE, FETCH_USER_ACHIEVEMENTS)
 
     except Exception as e:
         conn.rollback()

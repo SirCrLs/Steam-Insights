@@ -205,7 +205,7 @@ def verify_users(conn, api_key, max_users: int, seed_file: str):
         logger.error(f"SteamIDs could not be loaded from {seed_file}.")
         return []
 
-    unique_seed_ids = list(set(raw_seed_ids))[:max_users]
+    unique_seed_ids = list(dict.fromkeys(raw_seed_ids))[:max_users]
     logger.info(f"{len(unique_seed_ids)} unique SteamIDs loaded from seed file.")
 
     query = """
@@ -226,7 +226,7 @@ def verify_users(conn, api_key, max_users: int, seed_file: str):
 
     return valid_steam_ids
 
-def sync_users(conn, api_key, MAX_USERS:int = 300, BATCH_SIZE: int = 100):
+def sync_users(conn, api_key, MAX_USERS: int = 300, BATCH_SIZE: int = 100, fetch_achievements: bool = False):    
     """ USERS """
     SEED_FILE: str = os.path.join("data/seed_steam_ids.txt")
 
@@ -270,7 +270,8 @@ def sync_users(conn, api_key, MAX_USERS:int = 300, BATCH_SIZE: int = 100):
                     "steam_id": steam_id,
                     "has_public_games": False,
                     "has_public_achievements": False,
-                    "games_fetched": True 
+                    "games_fetched": True,
+                    "achievements_fetched": fetch_achievements
                 })
             else:
                 raw_games = games_data.get("games", [])
@@ -279,7 +280,7 @@ def sync_users(conn, api_key, MAX_USERS:int = 300, BATCH_SIZE: int = 100):
                 if raw_games:
                     user_games_rows = transform_owned_games(raw_games, steam_id)
                     games_by_id = {game["app_id"]: game for game in user_games_rows}
-                    
+
                     game_ids = []
                     for game in user_games_rows:
                         if game.get("playtime_forever", 0) != 0:
@@ -288,15 +289,17 @@ def sync_users(conn, api_key, MAX_USERS:int = 300, BATCH_SIZE: int = 100):
                         else:
                             game["achievements_status"] = "no achievements"
 
-                    user_achievements, achievements_by_game = fetch_and_transform_all_achievements(api_key, steam_id, game_ids)
-                    
-                    if user_achievements:
-                        has_public_achievements = True
-                        user_achievements_batch.extend(user_achievements)
+                    # SKIP if fetch_achievements = false
+                    if fetch_achievements:
+                        user_achievements, achievements_by_game = fetch_and_transform_all_achievements(api_key, steam_id, game_ids)
 
-                    for app_id in game_ids:
-                        if app_id in games_by_id:
-                            games_by_id[app_id]["achievements_status"] = achievements_by_game.get(app_id, "no achievements")
+                        if user_achievements:
+                            has_public_achievements = True
+                            user_achievements_batch.extend(user_achievements)
+
+                        for app_id in game_ids:
+                            if app_id in games_by_id:
+                                games_by_id[app_id]["achievements_status"] = achievements_by_game.get(app_id, "no achievements")
 
                     user_games_batch.extend(user_games_rows)
 
@@ -304,7 +307,8 @@ def sync_users(conn, api_key, MAX_USERS:int = 300, BATCH_SIZE: int = 100):
                     "steam_id": steam_id,
                     "has_public_games": has_public_games,
                     "has_public_achievements": has_public_achievements,
-                    "games_fetched": True
+                    "games_fetched": True,
+                    "achievements_fetched": fetch_achievements,
                 })
 
             time.sleep(1)
