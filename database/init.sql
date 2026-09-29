@@ -60,6 +60,7 @@ CREATE TABLE users (
     has_public_games BOOLEAN DEFAULT false, --false until proven otherwise
     has_public_achievements BOOLEAN DEFAULT false,
     games_fetched BOOLEAN DEFAULT NULL;
+    achievements_fetched BOOLEAN NOT NULL DEFAULT FALSE,
     fetched_at TIMESTAMP DEFAULT now()
 );
 
