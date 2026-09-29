@@ -93,3 +93,4 @@ database/crud/project/metals.sbt
 .scala-build/
 .bsp/
 cookies.txt
+test.R

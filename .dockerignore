@@ -43,3 +43,8 @@ data/
 *.parquet
 docs/
 *.md
+
+.git
+.Rhistory
+.Rproj.user
+renv/library
