@@ -94,3 +94,5 @@ database/crud/project/metals.sbt
 .bsp/
 cookies.txt
 test.R
+.lintr
+app_cache/

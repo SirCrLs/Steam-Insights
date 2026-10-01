@@ -5,8 +5,8 @@ import os
 
 """ VARIABLES """
 
-MAX_PAGE = 10  # SteamSpy: each page is 1000 games
-MAX_USERS = 1000 # With games AND achievements
+MAX_PAGE = 25  # SteamSpy: each page is 1000 games
+MAX_USERS = 20000 # With games and achievements
 
 FETCH_USER_ACHIEVEMENTS = False # user achievements are expensive to fetch
 
