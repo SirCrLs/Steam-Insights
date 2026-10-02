@@ -1,6 +1,7 @@
 ui <- page_navbar(
   title = "Steam Insights - EDA",
   theme = bs_theme(version = 5),
+
   nav_panel("Summary and quality", quality_ui("quality"))
 )
 
