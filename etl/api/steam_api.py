@@ -48,7 +48,7 @@ def update_live_status(current, total, current_id, mode : str):
 # Functions to fetch data from Steam API endpoints
 # ===
 
-def get_app_details(app_id, max_retries=2):
+def get_app_details(app_id, max_retries=5):
     """ Fetches metadata for a specific game with retry logic for rate limits. """
     params = {
         "appids": app_id, 
