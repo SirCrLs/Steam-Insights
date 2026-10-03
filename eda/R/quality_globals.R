@@ -78,9 +78,9 @@ get_null_pct <- function(tbl) {
 get_validity_rules <- function() {
   if (!file.exists(RULES_SQL)) return(NULL)
   df <- dbGetQuery(pool, paste(readLines(RULES_SQL), collapse = "\n"))
-  df$fallan    <- as.numeric(df$fallan)
-  df$revisados <- as.numeric(df$revisados)
-  df$pct       <- round(100 * df$fallan / pmax(df$revisados, 1), 2)
-  df$status    <- ifelse(df$pct == 0, "OK", ifelse(df$pct < 1, "Warning", "Check"))
+  df$failed  <- as.numeric(df$failed)
+  df$checked <- as.numeric(df$checked)
+  df$pct     <- round(100 * df$failed / pmax(df$checked, 1), 2)
+  df$status  <- ifelse(df$pct == 0, "OK", ifelse(df$pct < 1, "Warning", "Check"))
   df
 }
