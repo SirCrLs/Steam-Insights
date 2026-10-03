@@ -1,28 +1,49 @@
-# ============================================================
 # Summary & quality module: UI
-# ============================================================
-
 QUALITY_CSS <- "
-  /* Page: top 30% = cards, bottom 70% = charts (change 3fr / 7fr to resize) */
+  /* Page: cards take the top 30%, the charts take the rest */
   .quality-page {
-    display: grid; grid-template-rows: 3fr 7fr; gap: 12px;
+    display: flex; flex-direction: column; gap: 12px;
     height: calc(100vh - 110px); min-height: 560px;
   }
-  .quality-page > .card { min-height: 0; }
 
-  /* Top block: two rows of cards that split the 30% evenly */
-  .quality-top { display: grid; grid-template-rows: 1fr 1fr; gap: 12px; min-height: 0; }
-  .quality-top > div { min-height: 0; }
-  .card-row { display: grid; gap: 12px; height: 100%; }
+  /* Top block (30%): two rows of cards that split it evenly */
+  .quality-top {
+    flex: 0 0 30%; min-height: 150px;
+    display: grid; grid-template-rows: repeat(2, minmax(0, 1fr)); gap: 12px;
+  }
+  .quality-top > .shiny-html-output { display: flex; min-height: 0; }
+
+  .card-row {
+    flex: 1; min-height: 0; display: grid; gap: 12px;
+    grid-auto-rows: minmax(0, 1fr);
+  }
   .card-row.five { grid-template-columns: repeat(5, 1fr); }
   .card-row.four { grid-template-columns: repeat(4, 1fr); }
-  .table-box, .kpi-box { height: 100%; min-height: 0; }
-  .quality-top .bslib-value-box .card-body { padding: 0.4rem 0.9rem; }
 
-  /* Text sizes */
-  .table-box .value-box-title, .kpi-box .value-box-title { font-size: 0.8rem; }
-  .table-box .value-box-value { font-size: 1.4rem; }
-  .kpi-box .value-box-value   { font-size: 1.2rem; }
+  /* Each card fills its whole grid cell (no empty space around it) */
+  .table-box, .kpi-box { display: flex; min-height: 0; height: 100%; }
+  .quality-top .bslib-value-box {
+    flex: 1; height: 100% !important; max-height: none !important;
+    min-height: 0; margin: 0;
+  }
+
+  /* Content centered inside the card, no inner scrollbar */
+  .quality-top .bslib-value-box .card-body {
+    display: flex; flex-direction: column; justify-content: center;
+    padding: 0.3rem 1rem; overflow: hidden;
+  }
+  .quality-top .value-box-title,
+  .quality-top .value-box-value { margin: 0; line-height: 1.15; }
+
+  /* Text scales with the window height */
+  .table-box .value-box-title, .kpi-box .value-box-title {
+    font-size: clamp(0.75rem, 1.6vh, 1rem);
+  }
+  .table-box .value-box-value { font-size: clamp(1.2rem, 3.4vh, 2.2rem); }
+  .kpi-box .value-box-value   { font-size: clamp(1.1rem, 3vh, 1.9rem); }
+
+  /* Bottom block (70%): charts */
+  .quality-main { flex: 1 1 0; min-height: 0; }
 
   /* Table cards behave like buttons */
   .table-box { cursor: pointer; transition: transform .1s; }
@@ -32,7 +53,6 @@ QUALITY_CSS <- "
   }
 "
 
-# A value_box that works as a button: clicking it sets input$btn_<key>
 table_card <- function(ns, key, label, value, active) {
   div(
     class = paste("table-box", if (active) "active"),
@@ -40,12 +60,12 @@ table_card <- function(ns, key, label, value, active) {
       "Shiny.setInputValue('%s', Date.now(), {priority: 'event'})",
       ns(paste0("btn_", key))
     ),
-    value_box(label, value, height = "100%")
+    value_box(label, value)
   )
 }
 
 kpi_card <- function(label, value) {
-  div(class = "kpi-box", value_box(label, value, height = "100%"))
+  div(class = "kpi-box", value_box(label, value))
 }
 
 quality_ui <- function(id) {
@@ -55,21 +75,22 @@ quality_ui <- function(id) {
     div(
       class = "quality-page",
 
-      # top 30%: table cards (row 1) + health indicators (row 2)
       div(class = "quality-top",
           uiOutput(ns("boxes")),
           uiOutput(ns("kpis"))),
 
-      # bottom 70%: charts
-      navset_card_tab(
-        id = ns("tabs"), height = "100%", full_screen = TRUE,
-        nav_panel("Nulls", value = "nulls",
-                  div(class = "text-muted small", textOutput(ns("title"))),
-                  plotlyOutput(ns("nulls"), height = "100%")),
-        nav_panel("User funnel", value = "funnel",
-                  plotlyOutput(ns("funnel"), height = "100%")),
-        nav_panel("Validity rules", value = "rules",
-                  DT::DTOutput(ns("rules")))
+      div(
+        class = "quality-main",
+        navset_card_tab(
+          id = ns("tabs"), height = "100%", full_screen = TRUE,
+          nav_panel("Nulls", value = "nulls",
+                    div(class = "text-muted small", textOutput(ns("title"))),
+                    plotlyOutput(ns("nulls"), height = "100%")),
+          nav_panel("User funnel", value = "funnel",
+                    plotlyOutput(ns("funnel"), height = "100%")),
+          nav_panel("Validity rules", value = "rules",
+                    DT::DTOutput(ns("rules")))
+        )
       )
     )
   )

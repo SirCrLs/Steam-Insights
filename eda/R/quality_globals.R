@@ -1,9 +1,4 @@
-# ============================================================
 # Summary & quality module: settings, helpers and DB queries
-# ============================================================
-
-# ---- Settings ------------------------------------------------
-
 # TRUE = cache queries for one hour (FALSE is faster for development)
 CACHE_ON <- FALSE
 
@@ -21,13 +16,9 @@ RULES_SQL <- "sql/validity_rules.sql"
 # some games failed the API call, so they are excluded from the null check
 GAMES_API_FAILED <- "NOT (name = 'Not in DB' AND short_description = 'API call failed')"
 
-# ---- Small helpers -------------------------------------------
-
 fmt_int <- function(x) format(as.numeric(x), big.mark = ",")
 
-# ---- Database queries ----------------------------------------
-
-# One row, one column per table: row counts
+# Database queries 
 get_counts <- function() {
   sql <- paste(
     sprintf("(SELECT count(*)::float FROM %s) AS %s", names(TABLES), names(TABLES)),

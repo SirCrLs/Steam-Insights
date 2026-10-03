@@ -1,13 +1,9 @@
-# ============================================================
 # Summary & quality module: server
-# ============================================================
-
 quality_server <- function(id) {
   moduleServer(id, function(input, output, session) {
     ns <- session$ns
     hour_key <- function() format(Sys.time(), "%Y-%m-%d %H")
 
-    # -- Selected table: a click on a card selects it and opens the Nulls tab
     selected_table <- reactiveVal("games")
 
     for (key in names(TABLES)) {
@@ -20,11 +16,10 @@ quality_server <- function(id) {
       })
     }
 
-    # -- Data
     counts <- reactive(get_counts())
     kpis   <- reactive(get_kpis())
     nulls  <- reactive({
-      req(selected_table() %in% names(TABLES))   # only known tables reach the SQL
+      req(selected_table() %in% names(TABLES))
       get_null_pct(selected_table())
     })
 
@@ -34,7 +29,7 @@ quality_server <- function(id) {
       nulls  <- nulls  |> bindCache(selected_table(), hour_key())
     }
 
-    # -- Row 1: one card per table
+    # tables
     output$boxes <- renderUI({
       cnt <- counts()
       cards <- lapply(names(TABLES), function(key) {
@@ -44,7 +39,7 @@ quality_server <- function(id) {
       div(class = "card-row five", cards)
     })
 
-    # -- Row 2: health indicators
+    # kpis
     output$kpis <- renderUI({
       k <- kpis()
       div(class = "card-row four",
@@ -55,7 +50,7 @@ quality_server <- function(id) {
       )
     })
 
-    # -- Tab: nulls
+    # nulls
     output$title <- renderText(paste("% of NULL on columns -", selected_table()))
 
     output$nulls <- renderPlotly({
@@ -66,7 +61,7 @@ quality_server <- function(id) {
       ggplotly(p)
     })
 
-    # -- Tab: user funnel
+    # user funnel
     output$funnel <- renderPlotly({
       df <- get_funnel()
       p <- ggplot(df, aes(stage, n, text = format(n, big.mark = ","))) +
@@ -75,7 +70,7 @@ quality_server <- function(id) {
       ggplotly(p, tooltip = "text")
     })
 
-    # -- Tab: validity rules
+    # validity rules
     output$rules <- DT::renderDT({
       df <- get_validity_rules()
       validate(need(!is.null(df), paste("Missing file:", RULES_SQL)))
