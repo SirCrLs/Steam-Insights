@@ -71,7 +71,7 @@ def get_app_details(app_id, max_retries=5):
             
             if response.status_code in (403, 429):
                 wait_time = attempt * 10 
-                logger.warning(f"Rate limit/Forbidden (status {response.status_code}) para app_id={app_id}. Esperando {wait_time}s (Intento {attempt}/{max_retries})...")
+                logger.warning(f"Rate limit/Forbidden (status {response.status_code}) for app_id={app_id}. Waiting {wait_time}s (Try {attempt}/{max_retries})...")
                 time.sleep(wait_time)
                 continue
 
