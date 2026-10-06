@@ -94,7 +94,7 @@ CREATE TABLE user_achievements (
     steam_id BIGINT REFERENCES users(steam_id) ON DELETE CASCADE,
     app_id INTEGER,
     achievement_key TEXT,
-    unlocktime DATE,
+    unlock_time DATE,
     PRIMARY KEY (steam_id, app_id, achievement_key),
     FOREIGN KEY (app_id, achievement_key) REFERENCES achievements(app_id, achievement_key) ON DELETE CASCADE
 );

@@ -109,4 +109,85 @@ SELECT 'users: account created in the future',
        count(*) FILTER (WHERE account_created > now()),
        count(*)
 FROM users
-WHERE account_created IS NOT NULL;
+WHERE account_created IS NOT NULL
+
+UNION ALL
+
+-- 12. global pct should be between 0 and 100
+SELECT 'achievements: global_unlock_pct outside 0-100',
+       count(*) FILTER (WHERE global_unlock_pct NOT BETWEEN 0 AND 100),
+       count(*)
+FROM achievements
+WHERE global_unlock_pct IS NOT NULL
+
+UNION ALL
+
+-- 13. unlock time cannot be on the future
+SELECT 'user_achievements: unlocktime in the future',
+       count(*) FILTER (WHERE unlock_time > CURRENT_DATE),
+       count(*)
+FROM user_achievements
+WHERE unlock_time IS NOT NULL
+
+UNION ALL
+
+-- 14. recommended storage < minimum storage
+SELECT 'games: recommended storage < minimum storage',
+       count(*) FILTER (WHERE storage_recommended_gb < storage_minimum_gb),
+       count(*)
+FROM games
+WHERE storage_recommended_gb IS NOT NULL AND storage_minimum_gb IS NOT NULL
+
+UNION ALL
+
+-- 15. storage is more than 500 gb. Probably an extraction error
+SELECT 'games: minimum storage > 500 GB (extraction error)',
+       count(*) FILTER (WHERE storage_minimum_gb > 500),
+       count(*)
+FROM games
+WHERE storage_minimum_gb IS NOT NULL
+
+UNION ALL
+
+-- 16. total achievements cannot go negative
+SELECT 'games: negative total_achievements',
+       count(*) FILTER (WHERE total_achievements < 0),
+       count(*)
+FROM games
+WHERE total_achievements IS NOT NULL
+
+UNION ALL
+
+-- 17. recommendations cannot go negative
+SELECT 'games: negative recommendations',
+       count(*) FILTER (WHERE recommendations < 0),
+       count(*)
+FROM games
+WHERE recommendations IS NOT NULL
+
+UNION ALL
+
+-- 18. country code should only be 2 characters (ISO format)
+SELECT 'users: country_code format invalid',
+       count(*) FILTER (WHERE country_code !~ '^[A-Z]{2}$'),
+       count(*)
+FROM users
+WHERE country_code IS NOT NULL
+
+UNION ALL
+
+-- 19. playtime cannot be negative
+SELECT 'user_games: negative playtime_forever',
+       count(*) FILTER (WHERE playtime_forever < 0),
+       count(*)
+FROM user_games
+WHERE playtime_forever IS NOT NULL
+
+UNION ALL
+
+-- 20. same as 19 but for playtime on 2 weeks
+SELECT 'user_games: negative playtime_2weeks',
+       count(*) FILTER (WHERE playtime_2weeks < 0),
+       count(*)
+FROM user_games
+WHERE playtime_2weeks IS NOT NULL;
