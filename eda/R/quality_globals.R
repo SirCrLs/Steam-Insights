@@ -21,7 +21,8 @@ fmt_int <- function(x) format(as.numeric(x), big.mark = ",")
 # Database queries 
 get_counts <- function() {
   sql <- paste(
-    sprintf("(SELECT count(*)::float FROM %s) AS %s", names(TABLES), names(TABLES)),
+    sprintf("(SELECT count(*)::float FROM %s) AS %s",
+            names(TABLES), names(TABLES)),
     collapse = ", "
   )
   dbGetQuery(pool, paste("SELECT", sql))
@@ -43,10 +44,10 @@ get_kpis <- function() {
 
 get_funnel <- function() {
   r <- dbGetQuery(pool, "
-    SELECT count(*)::float                                        AS total,
-           count(*) FILTER (WHERE is_public)::float               AS public_profile,
-           count(*) FILTER (WHERE has_public_games)::float        AS public_games,
-           count(*) FILTER (WHERE achievements_fetched)::float    AS ach_attempted,
+    SELECT count(*)::float AS total,
+           count(*) FILTER (WHERE is_public)::float AS public_profile,
+           count(*) FILTER (WHERE has_public_games)::float AS public_games,
+           count(*) FILTER (WHERE achievements_fetched)::float AS ach_attempted,
            count(*) FILTER (WHERE has_public_achievements)::float AS with_ach
     FROM users")
   stages <- c("Users loaded", "Public profile", "Public games",

@@ -51,14 +51,21 @@ quality_server <- function(id) {
     })
 
     # nulls
-    output$title <- renderText(paste("% of NULL on columns -", selected_table()))
-
     output$nulls <- renderPlotly({
-      p <- ggplot(nulls(), aes(reorder(column, pct_nulls), pct_nulls)) +
-        geom_col() + coord_flip() +
+      df <- nulls()
+      df$column <- reorder(df$column, df$pct_nulls)
+
+      p <- ggplot(df,aes(x = column, y = pct_nulls,
+        text = paste0(
+          "Column: ", column,
+          "<br>NULLs: ", pct_nulls, "%"
+        )
+      )) + geom_col() + coord_flip() +
         scale_y_continuous(limits = c(0, 100)) +
-        labs(x = NULL, y = "% nulls") + theme_minimal()
-      ggplotly(p)
+        labs(x = NULL, y = "% nulls") +
+        theme_minimal()
+
+      ggplotly(p, tooltip = "text")
     })
 
     # user funnel
