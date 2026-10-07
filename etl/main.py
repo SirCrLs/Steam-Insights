@@ -5,8 +5,8 @@ import os
 
 """ VARIABLES """
 
-MAX_PAGE = 50  # SteamSpy: each page is 1000 games
-MAX_USERS = 20000 # With games and achievements
+MAX_PAGE = 55  # SteamSpy: each page is 1000 games
+MAX_USERS = 30000 # With games and achievements
 
 FETCH_USER_ACHIEVEMENTS = False # user achievements are expensive to fetch
 
@@ -20,11 +20,12 @@ def main():
     conn = get_connection()
 
     try:
-        logger.info(f"=== 1. Syncing games ===")
-        sync_games(conn, api_key, MAX_PAGE, GAMES_BATCH_SIZE)
 
-        logger.info(f"=== 2. Syncing users ===")
+        logger.info(f"=== 1. Syncing users ===")
         sync_users(conn, api_key, MAX_USERS, USERS_BATCH_SIZE, FETCH_USER_ACHIEVEMENTS)
+
+        logger.info(f"=== 2. Syncing games ===")
+        sync_games(conn, api_key, MAX_PAGE, GAMES_BATCH_SIZE)
 
     except Exception as e:
         conn.rollback()

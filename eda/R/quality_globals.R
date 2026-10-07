@@ -82,6 +82,23 @@ get_validity_rules <- function() {
   df$failed  <- as.numeric(df$failed)
   df$checked <- as.numeric(df$checked)
   df$pct     <- round(100 * df$failed / pmax(df$checked, 1), 2)
-  df$status  <- ifelse(df$pct == 0, "OK", ifelse(df$pct < 1, "Warning", "Check"))
+  df$status <- ifelse(df$pct == 0, "OK", ifelse(df$pct < 1, "Warning", "Check"))
   df
+}
+
+get_api_fails <- function() {
+  dbGetQuery(pool, "
+    SELECT
+      COUNT(*) AS total_games,
+      COUNT(*) FILTER (
+        WHERE short_description = 'API call failed'
+      ) AS api_failed,
+      ROUND(
+        100.0 * COUNT(*) FILTER (
+          WHERE short_description = 'API call failed'
+        ) / COUNT(*),
+        1
+      ) AS api_failed_pct
+    FROM games
+  ")
 }

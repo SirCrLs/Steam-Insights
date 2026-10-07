@@ -86,5 +86,31 @@ quality_server <- function(id) {
           backgroundColor = DT::styleEqual(c("OK", "Warning", "Check"),
                                            c("#d1e7dd", "#fff3cd", "#f8d7da")))
     })
+
+    # API failures
+    output$api_fails <- renderPlotly({
+      df <- get_api_fails()
+
+      plot_df <- data.frame(
+        stage = c("Total games", "API call failed"),
+        n = c(df$total_games, df$api_failed),
+        pct = c(NA, df$api_failed_pct)
+      )
+
+      p <- ggplot(plot_df, aes(stage, n, text = ifelse(
+        is.na(pct), paste0(format(n, big.mark = ","), " games"),
+        paste0( format(n, big.mark = ","), " games<br>", pct, "% of total")
+      )
+      )
+      ) +
+        geom_col() + coord_flip() +
+        labs(
+          x = NULL,
+          y = "Games"
+        ) +
+        theme_minimal()
+
+      ggplotly(p, tooltip = "text")
+    })
   })
 }

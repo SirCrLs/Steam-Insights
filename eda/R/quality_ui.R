@@ -88,6 +88,8 @@ quality_ui <- function(id) {
                     plotlyOutput(ns("nulls"), height = "100%")),
           nav_panel("User funnel", value = "funnel",
                     plotlyOutput(ns("funnel"), height = "100%")),
+          nav_panel("API failures", value = "api_fails",
+                    plotlyOutput(ns("api_fails"), height = "100%")),
           nav_panel("Validity rules", value = "rules",
                     DT::DTOutput(ns("rules")))
         )
