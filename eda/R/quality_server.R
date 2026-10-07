@@ -121,24 +121,17 @@ quality_server <- function(id) {
         return(NULL)
       }
 
-      plot_df <- data.frame(
-        field = names(df),
-        errors = as.numeric(unlist(df[1, ], use.names = FALSE)),
-        stringsAsFactors = FALSE
-      )
-
-      plot_df$errors[is.na(plot_df$errors)] <- 0
+      df$field <- reorder(df$field, df$errors)
 
       p <- ggplot(
-        plot_df,
+        df,
         aes(
-          x = reorder(field, errors),
+          x = field,
           y = errors,
           text = paste0(
-            field,
-            "<br>",
-            format(errors, big.mark = ","),
-            " extraction errors"
+            "Errors: ", format(errors, big.mark = ","), 
+            " of ", format(total, big.mark = ","),
+            "<br>Failure rate: ", pct_error, "%"
           )
         )
       ) +

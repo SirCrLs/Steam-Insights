@@ -103,49 +103,73 @@ get_api_fails <- function() {
   ")
 }
 
+# This call is very convoluted but ill try and explain it
+# It retrieves PC Requirements Extraction Errors and Failure Rates
+#
+# Queries the database to calculate total counts and percentage error rates
+# for hardware fields (processor, graphics, RAM, storage) where
+# raw PC requirements text exists but the parsed field returned NULL.
+#
+# It returns a table that has 4 columns (field, errors, total, pct_errors)
+#   field:      each column of the original table (processor, graphics, etc.)
+#   errors:     total errors
+#   total:      total count that succeded
+#   pct_errors: errors percentage against the total count
 get_requirements_errors <- function() {
   dbGetQuery(pool, "
-    SELECT
-      COUNT(*) FILTER (
-        WHERE pc_requirements_minimum IS NOT NULL
-          AND processor_minimum IS NULL
-      )::float AS processor_minimum,
-
-      COUNT(*) FILTER (
-        WHERE pc_requirements_recommended IS NOT NULL
-          AND processor_recommended IS NULL
-      )::float AS processor_recommended,
-
-      COUNT(*) FILTER (
-        WHERE pc_requirements_minimum IS NOT NULL
-          AND graphics_minimum IS NULL
-      )::float AS graphics_minimum,
-
-      COUNT(*) FILTER (
-        WHERE pc_requirements_recommended IS NOT NULL
-          AND graphics_recommended IS NULL
-      )::float AS graphics_recommended,
-
-      COUNT(*) FILTER (
-        WHERE pc_requirements_minimum IS NOT NULL
-          AND ram_minimum_gb IS NULL
-      )::float AS ram_minimum_gb,
-
-      COUNT(*) FILTER (
-        WHERE pc_requirements_recommended IS NOT NULL
-          AND ram_recommended_gb IS NULL
-      )::float AS ram_recommended_gb,
-
-      COUNT(*) FILTER (
-        WHERE pc_requirements_minimum IS NOT NULL
-          AND storage_minimum_gb IS NULL
-      )::float AS storage_minimum_gb,
-
-      COUNT(*) FILTER (
-        WHERE pc_requirements_recommended IS NOT NULL
-          AND storage_recommended_gb IS NULL
-      )::float AS storage_recommended_gb
-
-    FROM games
+    WITH counts AS (
+      SELECT
+        COUNT(*) FILTER 
+        (WHERE pc_requirements_minimum IS NOT NULL)::numeric AS min_total,
+        COUNT(*) FILTER 
+        (WHERE pc_requirements_recommended IS NOT NULL)::numeric AS rec_total,
+        
+        COUNT(*) FILTER 
+        (WHERE pc_requirements_minimum IS NOT NULL 
+        AND processor_minimum IS NULL)::numeric AS processor_minimum_err,
+        COUNT(*) FILTER 
+        (WHERE pc_requirements_recommended IS NOT NULL 
+        AND processor_recommended IS NULL)::numeric AS processor_recommended_err,
+        
+        COUNT(*) FILTER 
+        (WHERE pc_requirements_minimum IS NOT NULL 
+        AND graphics_minimum IS NULL)::numeric AS graphics_minimum_err,
+        COUNT(*) FILTER 
+        (WHERE pc_requirements_recommended IS NOT NULL 
+        AND graphics_recommended IS NULL)::numeric AS graphics_recommended_err,
+        
+        COUNT(*) FILTER 
+        (WHERE pc_requirements_minimum IS NOT NULL 
+        AND ram_minimum_gb IS NULL)::numeric AS ram_minimum_gb_err,
+        COUNT(*) FILTER 
+        (WHERE pc_requirements_recommended IS NOT NULL 
+        AND ram_recommended_gb IS NULL)::numeric AS ram_recommended_gb_err,
+        
+        COUNT(*) FILTER 
+        (WHERE pc_requirements_minimum IS NOT NULL 
+        AND storage_minimum_gb IS NULL)::numeric AS storage_minimum_gb_err,
+        COUNT(*) FILTER 
+        (WHERE pc_requirements_recommended IS NOT NULL 
+        AND storage_recommended_gb IS NULL)::numeric AS storage_recommended_gb_err
+      FROM games
+    )
+    SELECT 
+      field, 
+      errors::float AS errors, 
+      total::float AS total, 
+      ROUND(CAST(100.0 * errors / NULLIF(total, 0) AS numeric), 1)
+      ::float AS pct_error
+    FROM counts,
+    LATERAL (
+      VALUES
+        ('processor_minimum', processor_minimum_err, min_total),
+        ('processor_recommended', processor_recommended_err, rec_total),
+        ('graphics_minimum', graphics_minimum_err, min_total),
+        ('graphics_recommended', graphics_recommended_err, rec_total),
+        ('ram_minimum_gb', ram_minimum_gb_err, min_total),
+        ('ram_recommended_gb', ram_recommended_gb_err, rec_total),
+        ('storage_minimum_gb', storage_minimum_gb_err, min_total),
+        ('storage_recommended_gb', storage_recommended_gb_err, rec_total)
+    ) AS t(field, errors, total)
   ")
 }
