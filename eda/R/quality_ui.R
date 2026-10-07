@@ -91,7 +91,9 @@ quality_ui <- function(id) {
           nav_panel("API failures", value = "api_fails",
                     plotlyOutput(ns("api_fails"), height = "100%")),
           nav_panel("Validity rules", value = "rules",
-                    DT::DTOutput(ns("rules")))
+                    DT::DTOutput(ns("rules"))),
+          nav_panel("Requirements quality", value = "requirements_errors",
+                    plotlyOutput(ns("requirements_errors"), height = "100%"))
         )
       )
     )

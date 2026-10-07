@@ -112,5 +112,45 @@ quality_server <- function(id) {
 
       ggplotly(p, tooltip = "text")
     })
+
+    # Extraction error for pc requirements
+    output$requirements_errors <- renderPlotly({
+      df <- get_requirements_errors()
+
+      if (is.null(df) || nrow(df) == 0) {
+        return(NULL)
+      }
+
+      plot_df <- data.frame(
+        field = names(df),
+        errors = as.numeric(unlist(df[1, ], use.names = FALSE)),
+        stringsAsFactors = FALSE
+      )
+
+      plot_df$errors[is.na(plot_df$errors)] <- 0
+
+      p <- ggplot(
+        plot_df,
+        aes(
+          x = reorder(field, errors),
+          y = errors,
+          text = paste0(
+            field,
+            "<br>",
+            format(errors, big.mark = ","),
+            " extraction errors"
+          )
+        )
+      ) +
+        geom_col() +
+        coord_flip() +
+        labs(
+          x = NULL,
+          y = "Extraction errors"
+        ) +
+        theme_minimal()
+
+      ggplotly(p, tooltip = "text")
+    })
   })
 }

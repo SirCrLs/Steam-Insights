@@ -102,3 +102,50 @@ get_api_fails <- function() {
     FROM games
   ")
 }
+
+get_requirements_errors <- function() {
+  dbGetQuery(pool, "
+    SELECT
+      COUNT(*) FILTER (
+        WHERE pc_requirements_minimum IS NOT NULL
+          AND processor_minimum IS NULL
+      )::float AS processor_minimum,
+
+      COUNT(*) FILTER (
+        WHERE pc_requirements_recommended IS NOT NULL
+          AND processor_recommended IS NULL
+      )::float AS processor_recommended,
+
+      COUNT(*) FILTER (
+        WHERE pc_requirements_minimum IS NOT NULL
+          AND graphics_minimum IS NULL
+      )::float AS graphics_minimum,
+
+      COUNT(*) FILTER (
+        WHERE pc_requirements_recommended IS NOT NULL
+          AND graphics_recommended IS NULL
+      )::float AS graphics_recommended,
+
+      COUNT(*) FILTER (
+        WHERE pc_requirements_minimum IS NOT NULL
+          AND ram_minimum_gb IS NULL
+      )::float AS ram_minimum_gb,
+
+      COUNT(*) FILTER (
+        WHERE pc_requirements_recommended IS NOT NULL
+          AND ram_recommended_gb IS NULL
+      )::float AS ram_recommended_gb,
+
+      COUNT(*) FILTER (
+        WHERE pc_requirements_minimum IS NOT NULL
+          AND storage_minimum_gb IS NULL
+      )::float AS storage_minimum_gb,
+
+      COUNT(*) FILTER (
+        WHERE pc_requirements_recommended IS NOT NULL
+          AND storage_recommended_gb IS NULL
+      )::float AS storage_recommended_gb
+
+    FROM games
+  ")
+}
