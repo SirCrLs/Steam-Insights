@@ -55,6 +55,58 @@ get_funnel <- function() {
   data.frame(stage = factor(stages, levels = rev(stages)), n = unlist(r[1, ]))
 }
 
+# Retrieves Relationship Density and Entity Coverage Metrics
+get_relationship_density <- function() {
+  dbGetQuery(pool, "
+    SELECT metric, value FROM (
+      SELECT 'Avg. unlocked achievements per user' AS metric, 
+             ROUND(AVG(unlocked_count)::numeric, 1)::float AS value, 1 AS sort_order
+      FROM (
+        SELECT steam_id, COUNT(*) AS unlocked_count 
+        FROM user_achievements 
+        GROUP BY steam_id
+      ) user_achs
+
+      UNION ALL
+      SELECT 'Avg. games per user' AS metric, 
+             ROUND(AVG(game_count)::numeric, 1)::float AS value, 2 AS sort_order
+      FROM (
+        SELECT steam_id, COUNT(*) AS game_count 
+        FROM user_games 
+        GROUP BY steam_id
+      ) u_games
+
+      UNION ALL
+      SELECT 'Avg. achievements per game' AS metric, 
+             ROUND(AVG(ach_count)::numeric, 1)::float AS value, 3 AS sort_order
+      FROM (
+        SELECT app_id, COUNT(*) AS ach_count 
+        FROM achievements 
+        GROUP BY app_id
+      ) game_achs
+
+      UNION ALL
+      SELECT 'Users with achievements (%)' AS metric,
+             ROUND(100.0 * COUNT(DISTINCT ua.steam_id) / NULLIF(COUNT(DISTINCT u.steam_id), 0), 1)::float AS value, 4 AS sort_order
+      FROM users u
+      LEFT JOIN user_achievements ua ON u.steam_id = ua.steam_id
+
+      UNION ALL
+      SELECT 'Users with games (%)' AS metric,
+             ROUND(100.0 * COUNT(DISTINCT ug.steam_id) / NULLIF(COUNT(DISTINCT u.steam_id), 0), 1)::float AS value, 5 AS sort_order
+      FROM users u
+      LEFT JOIN user_games ug ON u.steam_id = ug.steam_id
+
+      UNION ALL
+      SELECT 'Games with achievements (%)' AS metric,
+             ROUND(100.0 * COUNT(DISTINCT a.app_id) / NULLIF(COUNT(DISTINCT g.app_id), 0), 1)::float AS value, 6 AS sort_order
+      FROM games g
+      LEFT JOIN achievements a ON g.app_id = a.app_id
+    ) sub
+    ORDER BY sort_order
+  ")
+}
+
 # % of NULLs for every column of one table
 get_null_pct <- function(tbl) {
   cols <- dbGetQuery(pool, sprintf(

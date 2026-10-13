@@ -77,6 +77,53 @@ quality_server <- function(id) {
       ggplotly(p, tooltip = "text")
     })
 
+    # relationship density as KPI cards inside Plotly (2 rows x 3 columns)
+    output$relationship_density <- renderPlotly({
+      df <- get_relationship_density()
+
+      if (is.null(df) || nrow(df) == 0) {
+        return(NULL)
+      }
+
+      num_rows <- 2
+      num_cols <- 3
+
+      p <- plot_ly()
+
+      for (i in 1:nrow(df)) {
+        m_title <- df$metric[i]
+        m_value <- df$value[i]
+        r_idx <- (i - 1) %/% num_cols
+        c_idx <- (i - 1) %% num_cols
+        suffix_val <- if (grepl("%", m_title)) "%" else ""
+
+        p <- p |> add_trace(
+          type = "indicator",
+          mode = "number+title",
+          value = m_value,
+          number = list(
+            font = list(size = 26, color = "#2c3e50"),
+            suffix = suffix_val
+          ),
+          title = list(
+            text = paste0("<b>", m_title, "</b>"),
+            font = list(size = 12, color = "#7f8c8d")
+          ),
+          domain = list(
+            row = r_idx,
+            column = c_idx
+          )
+        )
+      }
+
+      p |> layout(
+        grid = list(rows = num_rows, columns = num_cols, pattern = "independent"),
+        paper_bgcolor = "rgba(0,0,0,0)",
+        plot_bgcolor = "rgba(0,0,0,0)",
+        margin = list(t = 20, b = 20, l = 20, r = 20)
+      )
+    })
+
     # validity rules
     output$rules <- DT::renderDT({
       df <- get_validity_rules()
@@ -145,5 +192,6 @@ quality_server <- function(id) {
 
       ggplotly(p, tooltip = "text")
     })
+
   })
 }
