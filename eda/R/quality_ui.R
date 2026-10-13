@@ -95,7 +95,11 @@ quality_ui <- function(id) {
           nav_panel("Validity rules", value = "rules",
                     DT::DTOutput(ns("rules"))),
           nav_panel("Requirements quality", value = "requirements_errors",
-                    plotlyOutput(ns("requirements_errors"), height = "100%"))
+                    plotlyOutput(ns("requirements_errors"), height = "100%")),
+          nav_panel("Orphan records", value = "orphans",
+                    DT::DTOutput(ns("orphans"))),
+          nav_panel("Duplicates", value = "duplicates",
+                    DT::DTOutput(ns("duplicates")))
         )
       )
     )

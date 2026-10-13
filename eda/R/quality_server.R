@@ -193,5 +193,21 @@ quality_server <- function(id) {
       ggplotly(p, tooltip = "text")
     })
 
+    # Orphan records output
+    output$orphans <- DT::renderDT({
+      df <- get_orphan_records()
+      DT::datatable(df, rownames = FALSE, options = list(pageLength = 10, dom = "tp")) |>
+        DT::formatStyle("anomalies",
+          backgroundColor = DT::styleInterval(0, c("#d1e7dd", "#f8d7da")))
+    })
+
+    # Duplicate records output
+    output$duplicates <- DT::renderDT({
+      df <- get_duplicate_records()
+      DT::datatable(df, rownames = FALSE, options = list(pageLength = 10, dom = "tp")) |>
+        DT::formatStyle("anomalies",
+          backgroundColor = DT::styleInterval(0, c("#d1e7dd", "#f8d7da")))
+    })
+
   })
 }

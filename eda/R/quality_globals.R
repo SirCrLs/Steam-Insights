@@ -225,3 +225,47 @@ get_requirements_errors <- function() {
     ) AS t(field, errors, total)
   ")
 }
+
+# Retrieves Orphan Records and Referential Integrity Metrics
+get_orphan_records <- function() {
+  dbGetQuery(pool, "
+    SELECT 'Orphan user_games (Missing User)' AS check_name, 
+           COUNT(*)::float AS anomalies
+    FROM user_games ug
+    LEFT JOIN users u ON ug.steam_id = u.steam_id
+    WHERE u.steam_id IS NULL
+
+    UNION ALL
+
+    SELECT 'Orphan user_achievements (Missing User)' AS check_name, 
+           COUNT(*)::float AS anomalies
+    FROM user_achievements ua
+    LEFT JOIN users u ON ua.steam_id = u.steam_id
+    WHERE u.steam_id IS NULL
+
+    UNION ALL
+
+    SELECT 'Orphan achievements (Missing Game)' AS check_name, 
+           COUNT(*)::float AS anomalies
+    FROM achievements a
+    LEFT JOIN games g ON a.app_id = g.app_id
+    WHERE g.app_id IS NULL
+  ")
+}
+
+# Retrieves Duplicate Records and Uniqueness Metric
+get_duplicate_records <- function() {
+  dbGetQuery(pool, "
+    SELECT 'Duplicate Games (app_id)' AS check_name,
+           (COUNT(*) - COUNT(DISTINCT app_id))::float AS anomalies
+    FROM games
+    UNION ALL
+    SELECT 'Duplicate Users (steam_id)' AS check_name,
+           (COUNT(*) - COUNT(DISTINCT steam_id))::float AS anomalies
+    FROM users
+    UNION ALL
+    SELECT 'Duplicate User-Game Links' AS check_name,
+           (COUNT(*) - COUNT(DISTINCT (steam_id, app_id)))::float AS anomalies
+    FROM user_games
+  ")
+}
