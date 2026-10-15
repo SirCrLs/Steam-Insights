@@ -4,7 +4,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libpq-dev \
     && rm -rf /var/lib/apt/lists/*
 
-RUN R -e "install.packages(c('shiny','ggplot2','plotly','DBI','RPostgres','pool','dplyr','DT','bslib'), Ncpus = 4)"
+RUN R -e "install.packages(c('shiny','ggplot2','plotly','DBI','RPostgres','pool','dplyr','DT','bslib','bsicons'), Ncpus = 4)"
 
 COPY --chown=shiny:shiny . /srv/shiny-server/
 
