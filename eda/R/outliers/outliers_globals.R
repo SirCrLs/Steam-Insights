@@ -232,7 +232,7 @@ outliers_table_choices <- setNames(
 outliers_var_choices <- function(table) {
   keys <- names(Filter(function(v) v$table == table, outliers_vars))
   setNames(keys, vapply(keys, function(k) {
-    sprintf("%s \u2014 %s", outliers_vars[[k]]$name, outliers_vars[[k]]$label)
+    sprintf("%s", outliers_vars[[k]]$label)
   }, character(1)))
 }
 

@@ -6,10 +6,9 @@ outliers_ui <- function(id) {
   layout_sidebar(
     fillable = FALSE,
 
-    # Sidebar
     sidebar = sidebar(
       title = "Controls",
-      width = 320,
+      width = 280,
 
       selectInput(ns("table"), "Table",
                   choices = outliers_table_choices, selected = "games"),
@@ -18,21 +17,28 @@ outliers_ui <- function(id) {
                   choices = outliers_var_choices("games")),
 
       radioButtons(ns("method"), "Detection Method",
-                   choices = outliers_methods, selected = "iqr"),
+                   choices = outliers_methods, selected = "iqr", inline = TRUE),
 
       sliderInput(ns("k"), "Threshold k",
                   min = 0.5, max = 6, value = outliers_k_default[["iqr"]], step = 0.1),
-      helpText("IQR: 1.5 standard \u00b7 Z-score: 3 \u00b7 MAD: 3.5"),
+      tags$div(style = "font-size: 11px; color: gray; margin-top: -10px; margin-bottom: 10px;",
+               "IQR: 1.5 · Z: 3 · MAD: 3.5"),
 
-      hr(),
+      accordion(
+        open = FALSE,
+        accordion_panel(
+          "Advance options",
+          checkboxInput(ns("log"), "Apply log10", value = FALSE),
+          checkboxInput(ns("valid"), "Exclude out of range", value = TRUE),
+          checkboxInput(ns("zeros"), "Exclude zeros", value = FALSE),
+          checkboxInput(ns("zoom"), "Focus P1-P99", value = TRUE)
+        )
+      ),
 
-      checkboxInput(ns("log"),   "Apply log10 before detecting", value = FALSE),
-      checkboxInput(ns("valid"), "Exclude values out of range", value = TRUE),
-      checkboxInput(ns("zeros"), "Exclude zeros", value = FALSE),
-      checkboxInput(ns("zoom"),  "Focus histogram on P1-P99", value = TRUE),
-
-      actionButton(ns("apply"), "Aplly", icon = icon("play"),
-                   class = "btn-primary w-100")
+      div(style = "margin-top: 15px;",
+        actionButton(ns("apply"), "Apply", icon = icon("play"),
+                     class = "btn-primary w-100")
+      )
     ),
 
     # Content
