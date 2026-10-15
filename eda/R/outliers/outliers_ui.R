@@ -7,7 +7,6 @@ outliers_ui <- function(id) {
     fillable = FALSE,
 
     sidebar = sidebar(
-      title = "Controls",
       width = 280,
 
       selectInput(ns("table"), "Table",
