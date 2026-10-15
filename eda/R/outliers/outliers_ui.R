@@ -27,7 +27,7 @@ outliers_ui <- function(id) {
       accordion(
         open = FALSE,
         accordion_panel(
-          "Advance options",
+          "Advanced options",
           checkboxInput(ns("log"), "Apply log10", value = FALSE),
           checkboxInput(ns("valid"), "Exclude out of range", value = TRUE),
           checkboxInput(ns("zeros"), "Exclude zeros", value = FALSE),
