@@ -48,3 +48,4 @@ docs/
 .Rhistory
 .Rproj.user
 renv/library
+Rplots.pdf

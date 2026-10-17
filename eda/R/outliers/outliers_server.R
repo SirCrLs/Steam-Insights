@@ -256,7 +256,8 @@ outliers_server <- function(id) {
 
     # 3. GROUP
     group_data <- reactive({
-      p <- params(); lim <- limits()
+      p <- params()
+      lim <- limits()
       gname <- outliers_or(input$group, "")
       validate(need(nzchar(gname), "This table has no defined groups."))
       grp <- outliers_tables[[p$var$table]]$groups[[gname]]
@@ -278,36 +279,127 @@ outliers_server <- function(id) {
       list(d = d, gname = gname)
     })
 
+    # This graph had to be made manually because it had a weird bug where
+    # it wouldnt show anything on screen
     output$group_plot <- renderPlotly({
-      p <- params(); lim <- limits(); gd <- group_data(); d <- gd$d
+      p <- params()
+      lim <- limits()
+      gd <- group_data()
+      d <- gd$d
+      d$group_num <- as.numeric(d$grp)
 
-      g <- ggplot(d, aes(x = grp, fill = pct,
-                         text = sprintf("%s<br>n = %s<br>Outliers: %s (%.1f%%)",
-                                        grp, fmt(n), fmt(n_out), pct))) +
-        geom_boxplot(aes(ymin = wlo, lower = q1, middle = med, upper = q3, ymax = whi),
-                     stat = "identity", colour = "#3b6a8f") +
-        scale_fill_gradient(low = "#9ecae1", high = "#E45756", name = "% outliers") +
-        coord_flip() +
-        labs(x = gd$gname, y = axis_title(p)) +
+      d$hover <- sprintf(
+        "%s<br>n = %s<br>Outliers: %s (%.1f%%)",
+        d$grp,
+        fmt(d$n),
+        fmt(d$n_out),
+        d$pct
+      )
+
+      g <- ggplot(d) +
+        geom_rect(
+          aes(
+            xmin = group_num - 0.3,
+            xmax = group_num + 0.3,
+            ymin = q1,
+            ymax = q3,
+            fill = pct,
+            text = hover
+          ),
+          colour = "#3b6a8f"
+        ) +
+        geom_segment(
+          aes(
+            x = group_num,
+            xend = group_num,
+            y = wlo,
+            yend = q1
+          ),
+          colour = "#3b6a8f"
+        ) +
+        geom_segment(
+          aes(
+            x = group_num,
+            xend = group_num,
+            y = q3,
+            yend = whi
+          ),
+          colour = "#3b6a8f"
+        ) +
+        geom_segment(
+          aes(
+            x = group_num - 0.15,
+            xend = group_num + 0.15,
+            y = wlo,
+            yend = wlo
+          ),
+          colour = "#3b6a8f"
+        ) +
+        geom_segment(
+          aes(
+            x = group_num - 0.15,
+            xend = group_num + 0.15,
+            y = whi,
+            yend = whi
+          ),
+          colour = "#3b6a8f"
+        ) +
+        geom_segment(
+          aes(
+            x = group_num - 0.3,
+            xend = group_num + 0.3,
+            y = med,
+            yend = med
+          ),
+          colour = "#E45756",
+          linewidth = 1
+        ) +
+        scale_fill_gradient(
+          low = "#9ecae1",
+          high = "#E45756",
+          name = "% outliers"
+        ) +
+
+        scale_x_continuous(
+          breaks = seq_along(levels(d$grp)),
+          labels = levels(d$grp)
+        ) +
+
+        labs(
+          x = gd$gname,
+          y = axis_title(p)
+        ) +
+
         theme_minimal()
 
       if (lim$ok) {
-        g <- g + geom_hline(yintercept = c(lim$lo, lim$hi),
-                            linetype = "dashed", colour = "#444444")
+        g <- g +
+          geom_hline(
+            yintercept = c(lim$lo, lim$hi),
+            linetype = "dashed",
+            colour = "#444444"
+          )
       }
-      if (p$log) g <- g + scale_y_continuous(labels = outliers_log_labels)
 
+      if (p$log) {
+        g <- g +
+          scale_y_continuous(
+            labels = outliers_log_labels
+          )
+      }
+
+      g <- g + coord_flip()
       ggplotly(g, tooltip = "text")
     })
 
     output$group_tbl <- renderDT({
       d <- group_data()$d
-      tabla <- data.frame(
-        Group = as.character(d$grp), Registros = d$n,
+      table <- data.frame(
+        Group = as.character(d$grp), Records = d$n,
         Outliers = d$n_out, `% outliers` = round(d$pct, 2),
         check.names = FALSE
       )
-      datatable(tabla[order(-tabla$Outliers), ], rownames = FALSE,
+      datatable(table[order(-table$Outliers), ], rownames = FALSE,
                 options = list(pageLength = 10, dom = "tip")) %>%
         formatRound(c("Records", "Outliers"), digits = 0, mark = ",")
     })
