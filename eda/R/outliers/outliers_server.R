@@ -406,7 +406,8 @@ outliers_server <- function(id) {
 
     # 4. TABLE
     rows <- reactive({
-      p <- params(); lim <- limits()
+      p <- params()
+      lim <- limits()
       empty <- data.frame(ID = character(), Detail = character(), Value = numeric(),
                           `Direction` = character(), Severity = character(),
                           `Distance (scale)` = numeric(), check.names = FALSE)
@@ -420,7 +421,7 @@ outliers_server <- function(id) {
         ID        = d$id,
         Detail   = d$lbl,
         Value     = d$value,
-        `Direction` = ifelse(d$bajo, "lower", "upper"),
+        `Direction` = ifelse(d$low, "lower", "upper"),
         Severity = ifelse(d$dist > p$k * lim$scale, "Extreme", "Slight"),
         `Distance (scale)` = d$dist / lim$scale,
         check.names = FALSE
@@ -428,12 +429,14 @@ outliers_server <- function(id) {
     })
 
     rows_filtered <- reactive({
+      req(input$sev)
       d <- rows()
       d[d$Severity %in% input$sev, , drop = FALSE]
     })
 
     output$table_info <- renderUI({
-      p <- params(); ct <- counts()
+      p <- params()
+      ct <- counts()
       total <- ct$n_low + ct$n_high
       msg <- sprintf("ID = %s \u00b7 Detail = %s. Distance = how much moves away from the limit.",
                      p$var$id_name, p$var$lbl_name)
@@ -445,10 +448,14 @@ outliers_server <- function(id) {
     })
 
     output$rows_tbl <- renderDT({
-      d <- rows_filtered()
-      datatable(d, rownames = FALSE, filter = "top",
-                options = list(pageLength = 15, dom = "frtip")) %>%
-        formatRound(c("Value", "Distance (\u00d7 scale)"), digits = 2, mark = ",")
+      d <- rows_filtered() 
+      dt <- datatable(d, rownames = FALSE, filter = "top",
+                      options = list(pageLength = 10, dom = "frtip"))
+      if (nrow(d) > 0) {
+        dt <- dt %>% formatRound(c("Value", "Distance (scale)"), digits = 2, mark = ",")
+      }
+
+      dt
     })
 
     output$download <- downloadHandler(
