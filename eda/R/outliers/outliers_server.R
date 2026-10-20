@@ -80,23 +80,57 @@ outliers_server <- function(id) {
       p <- params(); st <- stats(); lim <- limits(); ct <- counts()
       n_out <- ct$n_low + ct$n_high
 
-      layout_column_wrap(
-        width = 1/4, heights_equal = "row", fill = FALSE,
-        value_box("Analyzed records", fmt(st$n),
-                  showcase = bs_icon("database"), theme = "primary"),
-        value_box("Outliers", fmt(n_out),
-                  tags$p(sprintf("%s lower \u00b7 %s top",
-                            fmt(ct$n_low), fmt(ct$n_high))),
-                  showcase = bs_icon("exclamation-triangle"), theme = "danger"),
-        value_box("% of outliers",
-                  sprintf("%.2f %%", 100 * n_out / st$n),
-                  tags$p(sprintf("Extremes: %s", fmt(ct$n_ext))),
-                  showcase = bs_icon("percent"), theme = "warning"),
-        value_box("Limits",
-                  if (lim$ok) paste(fmt(back(lim$lo, p)), "\u2192", fmt(back(lim$hi, p))) else "\u2014",
-                  tags$p(sprintf("%s \u00b7 k = %s", outliers_method_names[[p$method]], p$k)),
-                  showcase = bs_icon("rulers"), theme = "secondary")
-      )
+      # notices n KPIs
+      output$notice <- renderUI({
+        lim <- limits()
+        if (!lim$ok) {
+          div(class = "alert alert-warning py-2 mb-2", style = "font-size: 0.9rem;",
+              bs_icon("info-circle"), " ", lim$reason)
+        }
+      })
+
+      output$kpis <- renderUI({
+        p <- params()
+        st <- stats()
+        lim <- limits()
+        ct <- counts()
+        n_out <- ct$n_low + ct$n_high
+
+        layout_column_wrap(
+          width = 1/4, heights_equal = "row", fill = FALSE,
+          value_box(
+            title = "Analyzed records",
+            value = fmt(st$n),
+            showcase = bs_icon("database"),
+            showcase_layout = "left center",
+            theme = "primary"
+          ),
+          value_box(
+            title = "Outliers",
+            value = fmt(n_out),
+            tags$p(sprintf("%s lower \u00b7 %s top", fmt(ct$n_low), fmt(ct$n_high)), class = "mb-0 small"),
+            showcase = bs_icon("exclamation-triangle"), 
+            showcase_layout = "left center",
+            theme = "danger"
+          ),
+          value_box(
+            title = "% of outliers",
+            value = sprintf("%.2f %%", 100 * n_out / st$n),
+            tags$p(sprintf("Extremes: %s", fmt(ct$n_ext)), class = "mb-0 small"),
+            showcase = bs_icon("percent"), 
+            showcase_layout = "left center",
+            theme = "warning"
+          ),
+          value_box(
+            title = "Limits",
+            value = if (lim$ok) paste(fmt(back(lim$lo, p)), "->", fmt(back(lim$hi, p))) else "\u2014",
+            tags$p(sprintf("%s \u00b7 k = %s", outliers_method_names[[p$method]], p$k), class = "mb-0 small"),
+            showcase = bs_icon("rulers"), 
+            showcase_layout = "left center",
+            theme = "secondary"
+          )
+        )
+      })
     })
 
     # 1. DISTRIBUTION
