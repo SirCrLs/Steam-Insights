@@ -8,7 +8,6 @@
 
 
 library(shiny)
-library(correlation_levels.R)
 library(bslib)
 library(bsicons)
 library(DBI)
@@ -18,6 +17,8 @@ library(ggplot2)
 library(plotly)
 library(DT)
 library(htmlwidgets)
+
+source("R/correlation/correlation_levels.R")
 
 # Constants
 correlation_max_levels <- 15L # max categories shown
