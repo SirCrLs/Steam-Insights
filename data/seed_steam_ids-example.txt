@@ -12,3 +12,7 @@ to generate this file with the necessary ids
 save this file with just the steamids you know and this script will do everything else
 syntaxis 
 generate_steam_seed_ids(api_key, starting_steam_id, max_ids=300, output_file="data/seed_steam_ids.txt")
+
+P.D. 
+You should CREATE a file called "seed_steam_ids.txt" and save an steamID. 
+DO NOT save an steamID here, this is just an example.
