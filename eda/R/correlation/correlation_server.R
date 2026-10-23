@@ -400,7 +400,7 @@ correlation_server <- function(id) {
       show <- data.frame(
         `Variable A` = tbl$var_a, `Variable B` = tbl$var_b,
         r = round(tbl$r, 3), n = tbl$n,
-        Fuerza = tbl$strength, Nota = tbl$note,
+        Strength = tbl$strength, Note = tbl$note,
         check.names = FALSE, stringsAsFactors = FALSE
       )
       datatable(show, rownames = FALSE, selection = "single",

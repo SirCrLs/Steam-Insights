@@ -396,7 +396,7 @@ correlation_plot_scatter <- function(df, x_label, y_label, log_x, log_y,
   g <- ggplot(df, aes(x = x, y = y))
 
   if (use_density) {
-    g <- g + geom_bin2d(bins = 60) +
+    g <- g + stat_bin2d(aes(fill = after_stat(count)), geom = "tile", bins = 60) +
       scale_fill_viridis_c(name = "Observations")
   } else {
     pts <- if (nrow(df) > correlation_max_points) dplyr::slice_sample(df, n = correlation_max_points) else df
