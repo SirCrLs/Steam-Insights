@@ -222,7 +222,7 @@ correlation_server <- function(id) {
       txt <- switch(
         d$kind,
         nn = sprintf(
-          "Spearman rho = %.2f (%s, %s), p = %.4f * Pearson r = %.2f * R^2 = %.2f * n = %s",
+          "Spearman rho = %.2f (%s, %s), p = %s * Pearson r = %.2f * R^2 = %.2f * n = %s",
           st$spearman, correlation_strength(st$spearman),
           if (st$spearman >= 0) "positive" else "negative",
           correlation_fmt_p(st$spearman_p), st$pearson, st$r2, fmt(st$n)
@@ -273,8 +273,8 @@ correlation_server <- function(id) {
       if (d$kind == "nc") {
         tbl <- d$df %>%
           group_by(group) %>%
-          summarise(Registros = dplyr::n(), Media = mean(value), Mediana = median(value),
-                    `Desv. est.` = sd(value), .groups = "drop") %>%
+          summarise(Records = dplyr::n(), Mean = mean(value), Median = median(value),
+                    `Std. Dev.` = sd(value), .groups = "drop") %>%
           arrange(desc(Registros)) %>%
           rename(Grupo = group)
         return(

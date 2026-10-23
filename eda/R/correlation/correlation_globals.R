@@ -71,8 +71,8 @@ correlation_var_choices <- function(level, types = c("num", "cat")) {
   for (tp in types) {
     sel <- Filter(function(v) v$type == tp, vars)
     if (length(sel) == 0) next
-    labels <- vapply(sel, function(v) sprintf("%s \u2014 %s", v$name, v$label), character(1))
-    group_name <- if (tp == "num") "Num\u00e9ricas" else "Categ\u00f3ricas"
+    labels <- vapply(sel, function(v) sprintf("%s", v$name), character(1))
+    group_name <- if (tp == "num") "Numeric" else "Categorical"
     out[[group_name]] <- stats::setNames(names(sel), unname(labels))
   }
   out
@@ -397,7 +397,7 @@ correlation_plot_scatter <- function(df, x_label, y_label, log_x, log_y,
 
   if (use_density) {
     g <- g + geom_bin2d(bins = 60) +
-      scale_fill_viridis_c(trans = "log10", name = "Observations")
+      scale_fill_viridis_c(name = "Observations")
   } else {
     pts <- if (nrow(df) > correlation_max_points) dplyr::slice_sample(df, n = correlation_max_points) else df
     g <- if (has_color) {
