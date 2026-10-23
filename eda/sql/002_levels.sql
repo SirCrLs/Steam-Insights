@@ -168,6 +168,7 @@ picked AS (
     WHERE rnd < 1 OR achievements_status = 'success'
 )
 SELECT p.steam_id, p.app_id,
+       p.rnd,
        p.playtime_forever, p.playtime_2weeks,
        (p.rnd < 1)                          AS in_uniform,
        (p.achievements_status = 'success')     AS has_ach_data,
@@ -202,15 +203,16 @@ picked AS (
     SELECT * FROM base WHERE rnd < 1
 )
 SELECT p.app_id, p.achievement_key, p.display_name,
+       p.rnd,
        p.global_unlock_pct,
        LENGTH(p.display_name)     AS name_length,
        LENGTH(p.achievement_desc) AS desc_length,
        CASE WHEN p.global_unlock_pct IS NULL THEN NULL
-            WHEN p.global_unlock_pct <  1  THEN 'Ultra rara (<1%)'
-            WHEN p.global_unlock_pct <  5  THEN 'Rara (1-5%)'
-            WHEN p.global_unlock_pct < 20  THEN 'Poco común (5-20%)'
-            WHEN p.global_unlock_pct < 50  THEN 'Común (20-50%)'
-            ELSE 'Muy común (≥50%)' END AS rarity_tier,
+            WHEN p.global_unlock_pct <  1  THEN 'Ultra rare (<1%)'
+            WHEN p.global_unlock_pct <  5  THEN 'Rare (1-5%)'
+            WHEN p.global_unlock_pct < 20  THEN 'Uncommon (5-20%)'
+            WHEN p.global_unlock_pct < 50  THEN 'Common (20-50%)'
+            ELSE 'Very common (≥50%)' END AS rarity_tier,
        g.name AS game_name,
        g.price_usd, g.is_free, g.approval_rate, g.total_reviews, g.positive_reviews,
        g.metacritic_score,
