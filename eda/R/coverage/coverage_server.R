@@ -8,7 +8,8 @@ coverage_server <- function(id) moduleServer(id, function(input, output, session
   users <- reactive(cov_q("SELECT is_public, has_public_games, games_owned, total_playtime, avg_playtime,
                            pct_games_played, account_age_days, account_year, country_code, has_ach_data FROM mv_level_user"))
   games <- reactive({
-    d <- cov_q("SELECT primary_genre, release_year, n_users, n_users_ach_data, (owners_min + owners_max) / 2.0 AS owners FROM mv_level_game")
+    d <- cov_q(sprintf("SELECT n_users, n_users_ach_data, %s AS owners, %s FROM mv_level_game", cov_owners,
+                       paste(sprintf('(%s) AS "%s"', cov_game_groups, names(cov_game_groups)), collapse = ", ")))
     d[c("n_users", "n_users_ach_data")] <- lapply(d[c("n_users", "n_users_ach_data")], function(x) ifelse(is.na(x), 0, x))
     d
   })
@@ -18,29 +19,27 @@ coverage_server <- function(id) moduleServer(id, function(input, output, session
 
   # ---- KPI strip ----
   output$kpis <- renderUI({
-    u <- users()
-    g <- games()
-    r <- refreshed()
-    vb <- function(title, value, icon) value_box(title, value, showcase = bs_icon(icon))
-    layout_column_wrap(width = 1 / 6, fill = FALSE,
-      vb("Users", cov_num(nrow(u)), "people"),
-      vb("Public profile", cov_pct(mean(u$is_public %in% TRUE)), "unlock"),
-      vb("With games", cov_pct(mean((u$games_owned > 0) %in% TRUE)), "controller"),
-      vb("With achievement data", cov_pct(mean(u$has_ach_data %in% TRUE)), "trophy"),
-      vb("Games with users", cov_pct(mean(g$n_users > 0)), "bar-chart"),
-      vb("Last refresh", if (is.na(r)) "n/a" else format(r, "%Y-%m-%d"), "clock"))
+    u <- users(); g <- games(); r <- refreshed()
+    vb <- function(title, value) card(class = "text-center", fill = FALSE,
+      card_body(class = "py-2", fill = FALSE, div(class = "text-muted small", title), div(class = "fs-5 fw-semibold", value)))
+    layout_column_wrap(width = 1 / 6, fill = FALSE, heights_equal = "row",
+      vb("Users", cov_num(nrow(u))),
+      vb("Public profile", cov_pct(mean(u$is_public %in% TRUE))),
+      vb("With games", cov_pct(mean((u$games_owned > 0) %in% TRUE))),
+      vb("With achievement data", cov_pct(mean(u$has_ach_data %in% TRUE))),
+      vb("Games with users", cov_pct(mean(g$n_users > 0))),
+      vb("Last refresh", if (is.na(r)) "n/a" else format(r, "%Y-%m-%d")))
   })
 
   # ---- Coverage tab ----
   output$funnel <- renderPlotly(ggplotly(cov_bar(cov_funnel(users()), sort = FALSE)))
   output$status <- renderPlotly(ggplotly(cov_bar(status())))
   output$missing <- renderDT({
-    u <- users()
-    g <- games()
+    u <- users(); g <- games()
     dt(data.frame(
       Metric = c("Users without country_code", "Games without primary genre",
                  "Games with at least one user in the sample", "Games with achievement data from users"),
-      Percent = 100 * c(mean(is.na(u$country_code)), mean(is.na(g$primary_genre)),
+      Percent = 100 * c(mean(is.na(u$country_code)), mean(is.na(g$Genre)),
                         mean(g$n_users > 0), mean(g$n_users_ach_data > 0))
     )) %>% formatRound("Percent", 1)
   })
@@ -64,9 +63,7 @@ coverage_server <- function(id) moduleServer(id, function(input, output, session
 
   rep_data <- reactive({
     d <- games(); d <- d[!is.na(d$owners) & d$owners > 0, ]
-    genre <- input$rep_by == "Genre"
-    list(rho = cor(d$n_users, d$owners, method = "spearman"),
-         idx = cov_index(d, if (genre) "primary_genre" else "release_year", top = if (genre) 15 else 100))
+    list(rho = cor(d$n_users, d$owners, method = "spearman"), idx = cov_index(d, input$rep_by))
   })
   output$rep_note <- renderUI(tags$p(class = "text-muted small", sprintf(
     "Spearman correlation between users in the sample and SteamSpy owners (per game): %.2f. Index = share of sample / share of owners; values outside 0.5-2 are flagged.",

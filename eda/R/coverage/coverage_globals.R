@@ -20,14 +20,35 @@ cov_user_vars <- c("games_owned", "total_playtime", "avg_playtime", "pct_games_p
 cov_cols <- c(all = "#4C78A8", ok = "#4C78A8", low = "#F2B134", insufficient = "#E45756",
               over = "#E45756", under = "#F2B134", check = "#E45756")
 
+# Game-level groupings: SQL expressions over mv_level_game, shared by the reliability tab and the
+# representation index. Band cut-offs live in these CASE expressions.
+cov_owners <- "(owners_min + owners_max) / 2.0"
+cov_game_groups <- c(
+  "Genre" = "primary_genre",
+  "Release year" = "release_year::text",
+  "Owners tier" = sprintf("CASE WHEN owners_max IS NULL THEN NULL WHEN %1$s < 20000 THEN '<20k'
+    WHEN %1$s < 200000 THEN '20k-200k' WHEN %1$s < 2000000 THEN '200k-2M' ELSE '2M+' END", cov_owners),
+  "Free vs paid" = "CASE WHEN is_free THEN 'Free' WHEN NOT is_free THEN 'Paid' END",
+  "Price band" = "CASE WHEN is_free OR price_usd = 0 THEN 'Free' WHEN price_usd IS NULL THEN NULL
+    WHEN price_usd < 5 THEN '<$5' WHEN price_usd < 15 THEN '$5-15' WHEN price_usd < 30 THEN '$15-30' ELSE '$30+' END",
+  "Platform support" = "CASE WHEN is_on_windows IS NULL THEN NULL
+    WHEN is_on_windows AND is_on_mac AND is_on_linux THEN 'All three' WHEN is_on_windows AND is_on_mac THEN 'Windows + Mac'
+    WHEN is_on_windows AND is_on_linux THEN 'Windows + Linux' WHEN is_on_windows THEN 'Windows only' ELSE 'No Windows' END",
+  "Age rating" = "rating",
+  "Metacritic band" = "CASE WHEN metacritic_score IS NULL OR metacritic_score = 0 THEN 'No score'
+    WHEN metacritic_score < 50 THEN 'Below 50' WHEN metacritic_score < 75 THEN '50-74' ELSE '75+' END")
+
 # Reliability tab: one query per grouping, all returning grp, unit, n, user_games
 cov_rel_sql <- c(
   "Country" = "SELECT country_code AS grp, 'users' AS unit, COUNT(*)::float8 AS n, SUM(games_owned)::float8 AS user_games
                FROM mv_level_user WHERE country_code IS NOT NULL GROUP BY 1",
-  "Genre" = "SELECT primary_genre AS grp, 'games' AS unit, COUNT(*)::float8 AS n, SUM(n_users)::float8 AS user_games
-             FROM mv_level_game WHERE primary_genre IS NOT NULL GROUP BY 1",
-  "Release year" = "SELECT release_year::text AS grp, 'games' AS unit, COUNT(*)::float8 AS n, SUM(n_users)::float8 AS user_games
-                    FROM mv_level_game WHERE release_year IS NOT NULL GROUP BY 1")
+  "Library size" = "SELECT CASE WHEN games_owned < 10 THEN '1-9' WHEN games_owned < 50 THEN '10-49'
+                    WHEN games_owned < 200 THEN '50-199' ELSE '200+' END AS grp, 'users' AS unit,
+                    COUNT(*)::float8 AS n, SUM(games_owned)::float8 AS user_games
+                    FROM mv_level_user WHERE games_owned > 0 GROUP BY 1",
+  sapply(cov_game_groups, function(e) sprintf(
+    "SELECT (%s) AS grp, 'games' AS unit, COUNT(*)::float8 AS n, SUM(n_users)::float8 AS user_games
+     FROM mv_level_game WHERE (%s) IS NOT NULL GROUP BY 1", e, e)))
 
 cov_q <- function(sql) tryCatch(
   DBI::dbGetQuery(pool, sql),
@@ -64,7 +85,7 @@ cov_compare <- function(u) {
 }
 
 # Representation index = share of the user sample / share of SteamSpy owners (1 = proportional)
-cov_index <- function(d, col, top = 15, min_games = 30) {
+cov_index <- function(d, col, top = 25, min_games = 30) {
   d %>% filter(!is.na(.data[[col]]), owners > 0) %>%
     group_by(label = as.character(.data[[col]])) %>%
     summarise(games = n(), s = sum(n_users), o = sum(owners), .groups = "drop") %>%
