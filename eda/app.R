@@ -11,6 +11,10 @@ source("R/quality/quality_server.R")
 source("R/correlation/correlation_globals.R")
 source("R/correlation/correlation_ui.R")
 source("R/correlation/correlation_server.R")
+# Coverage and bias
+source("R/coverage/coverage_globals.R")
+source("R/coverage/coverage_ui.R")
+source("R/coverage/coverage_server.R")
 
 ui <- page_navbar(
   title = "Steam Insights - EDA",
@@ -23,13 +27,15 @@ ui <- page_navbar(
 
   nav_panel("Summary and quality", quality_ui("quality")),
   nav_panel("Outliers & Distributions", outliers_ui("outliers")),
-  nav_panel("Correlations", correlation_ui("correlation"))
+  nav_panel("Correlations", correlation_ui("correlation")),
+  nav_panel("Coverage", coverage_ui("coverage"))
 )
 
 server <- function(input, output, session) {
   quality_server("quality")
   outliers_server("outliers")
   correlation_server("correlation")
+  coverage_server("coverage")
 }
 
 shinyApp(ui, server)
